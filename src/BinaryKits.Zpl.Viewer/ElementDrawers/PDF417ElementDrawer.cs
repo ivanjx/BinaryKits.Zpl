@@ -1,7 +1,5 @@
-using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
 using SkiaSharp;
-using System;
 using System.Collections.Generic;
 using ZXing;
 using ZXing.Common;
@@ -86,7 +84,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 var bar_height = pdf417.ModuleWidth * 3;
                 var upscaled = proportional_upscale(default_bitmatrix, pdf417.ModuleWidth);
                 var result = vertical_scale(upscaled, pdf417.Height, bar_height);
-                
+
                 using var resizedImage = this.BitMatrixToSKBitmap(result, 1);
                 {
                     var png = resizedImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();

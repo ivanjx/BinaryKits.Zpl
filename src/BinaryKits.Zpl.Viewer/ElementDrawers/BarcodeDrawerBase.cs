@@ -39,7 +39,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 {
                     var currentMatrix = _skCanvas.TotalMatrix;
                     var concatMatrix = SKMatrix.Concat(currentMatrix, matrix);
-                    this._skCanvas.SetMatrix(concatMatrix);
+                    this._skCanvas.SetMatrix(in concatMatrix);
                 }
 
                 this._skCanvas.DrawBitmap(SKBitmap.Decode(barcodeImageData), x, y);
@@ -60,7 +60,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         {
             using (new SKAutoCanvasRestore(this._skCanvas))
             {
-                using var skPaint = new SKPaint(skFont);
+                using var skPaint = new SKPaint();
                 skPaint.IsAntialias = options.Antialias;
 
                 SKMatrix matrix = this.GetRotationMatrix(x, y, barcodeWidth, barcodeHeight, useFieldOrigin, fieldOrientation);
@@ -69,11 +69,10 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 {
                     var currentMatrix = _skCanvas.TotalMatrix;
                     var concatMatrix = SKMatrix.Concat(currentMatrix, matrix);
-                    this._skCanvas.SetMatrix(concatMatrix);
+                    this._skCanvas.SetMatrix(in concatMatrix);
                 }
 
-                var textBounds = new SKRect();
-                skPaint.MeasureText(interpretation, ref textBounds);
+                skFont.MeasureText(interpretation, out var textBounds);
 
                 x += (barcodeWidth - textBounds.Width) / 2;
                 if (!useFieldOrigin)
@@ -85,11 +84,11 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 if (printInterpretationLineAboveCode)
                 {
-                    this._skCanvas.DrawShapedText(interpretation, x, y - margin, skPaint);
+                    this._skCanvas.DrawShapedText(interpretation, x, y - margin, skFont, skPaint);
                 }
                 else
                 {
-                    this._skCanvas.DrawShapedText(interpretation, x, y + barcodeHeight + textBounds.Height + margin, skPaint);
+                    this._skCanvas.DrawShapedText(interpretation, x, y + barcodeHeight + textBounds.Height + margin, skFont, skPaint);
                 }
             }
         }
@@ -146,7 +145,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 image.SetPixel(col, 0, color);
             }
 
-            return image.Resize(new SKSizeI(image.Width * moduleWidth, height), SKFilterQuality.None);
+            return image.Resize(
+                new SKSizeI(image.Width * moduleWidth, height),
+                new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None));
         }
 
         protected SKBitmap BitMatrixToSKBitmap(BitMatrix matrix, int pixelScale)
@@ -162,7 +163,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
             }
 
-            return image.Resize(new SKSizeI(image.Width * pixelScale, image.Height * pixelScale), SKFilterQuality.None);
+            return image.Resize(
+                new SKSizeI(image.Width * pixelScale, image.Height * pixelScale),
+                new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None));
         }
 
         protected bool[] AdjustWidths(bool[] array, int wide, int narrow)
@@ -174,7 +177,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             {
                 if (current != last)
                 {
-                    result.AddRange(Enumerable.Repeat<bool>(last, count == 1 ? narrow : wide));
+                    result.AddRange(Enumerable.Repeat(last, count == 1 ? narrow : wide));
                     last = current;
                     count = 0;
                 }
@@ -182,7 +185,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 count += 1;
             }
 
-            result.AddRange(Enumerable.Repeat<bool>(last, narrow));
+            result.AddRange(Enumerable.Repeat(last, narrow));
 
             return result.ToArray();
         }

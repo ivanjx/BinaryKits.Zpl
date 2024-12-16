@@ -45,7 +45,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 var scaleX = 1.00f;
                 if (font.FontWidth != 0 && font.FontWidth != fontSize)
                 {
-                    scaleX *= (float)font.FontWidth / fontSize;
+                    scaleX *= font.FontWidth / fontSize;
                 }
 
                 var typeface = options.FontLoader(font.FontName);
@@ -61,13 +61,12 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
 
                 var skFont = new SKFont(typeface, fontSize, scaleX);
-                using var skPaint = new SKPaint(skFont)
+                using var skPaint = new SKPaint()
                 {
                     IsAntialias = options.Antialias
                 };
 
-                var textBoundBaseline = new SKRect();
-                skPaint.MeasureText("X", ref textBoundBaseline);
+                skFont.MeasureText("X", out var textBoundBaseline);
 
                 float x = fieldBlock.PositionX;
                 float y = fieldBlock.PositionY + textBoundBaseline.Height;
@@ -130,15 +129,14 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     {
                         var currentMatrix = _skCanvas.TotalMatrix;
                         var concatMatrix = SKMatrix.Concat(currentMatrix, matrix);
-                        this._skCanvas.SetMatrix(concatMatrix);
+                        this._skCanvas.SetMatrix(in concatMatrix);
                     }
 
                     foreach (var textLine in textLines)
                     {
                         x = fieldBlock.PositionX + hangingIndent;
 
-                        var textBounds = new SKRect();
-                        skPaint.MeasureText(textLine, ref textBounds);
+                        skFont.MeasureText(textLine, out var textBounds);
                         var diff = fieldBlock.Width - textBounds.Width;
 
                         switch (fieldBlock.TextJustification)
@@ -162,7 +160,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                             skPaint.BlendMode = SKBlendMode.Xor;
                         }
 
-                        this._skCanvas.DrawShapedText(textLine, x, y, skPaint);
+                        this._skCanvas.DrawShapedText(textLine, x, y, skFont, skPaint);
                         y += lineHeight;
                     }
                 }
@@ -171,8 +169,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
         private IEnumerable<string> WordWrap(string text, SKFont font, int maxWidth)
         {
-            using var tmpPaint = new SKPaint(font);
-            var spaceWidth = tmpPaint.MeasureText(" ");
+            var spaceWidth = font.MeasureText(" ");
             var lines = new List<string>();
 
             var words = new Stack<string>(text.Split(new[] { ' ' }, StringSplitOptions.None).Reverse());
@@ -186,7 +183,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     var subwords = word.Split(new[] { @"\&" }, 2, StringSplitOptions.None);
                     word = subwords[0];
                     words.Push(subwords[1]);
-                    var wordWidth = tmpPaint.MeasureText(word);
+                    var wordWidth = font.MeasureText(word);
                     if (width + wordWidth <= maxWidth)
                     {
                         line.Append(word);
@@ -200,14 +197,14 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         {
                             lines.Add(line.ToString().Trim());
                         }
-                        lines.Add(word.ToString());
+                        lines.Add(word);
                         line = new StringBuilder();
                         width = 0;
                     }
                 }
                 else
                 {
-                    var wordWidth = tmpPaint.MeasureText(word);
+                    var wordWidth = font.MeasureText(word);
                     if (width + wordWidth <= maxWidth)
                     {
                         line.Append(word + " ");

@@ -1,3 +1,4 @@
+using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
 using BinaryKits.Zpl.Viewer.Helpers;
 using SkiaSharp;
@@ -30,7 +31,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             {
                 float x = textField.PositionX;
                 float y = textField.PositionY;
-                var fieldJustification = Label.FieldJustification.None;
+                FieldJustification fieldJustification;
 
                 var font = textField.Font;
 
@@ -38,13 +39,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 var scaleX = 1.00f;
                 if (font.FontWidth != 0 && font.FontWidth != fontSize)
                 {
-                    scaleX *= (float)font.FontWidth / fontSize;
+                    scaleX *= font.FontWidth / fontSize;
                 }
 
                 var typeface = options.FontLoader(font.FontName);
 
                 var skFont = new SKFont(typeface, fontSize, scaleX);
-                using var skPaint = new SKPaint(skFont)
+                using var skPaint = new SKPaint()
                 {
                     IsAntialias = options.Antialias
                 };
@@ -60,10 +61,8 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     displayText = displayText.Replace("-", " \u2013 ");
                 }
 
-                var textBounds = new SKRect();
-                var textBoundBaseline = new SKRect();
-                skPaint.MeasureText("X", ref textBoundBaseline);
-                skPaint.MeasureText(displayText, ref textBounds);
+                skFont.MeasureText("X", out var textBoundBaseline);
+                skFont.MeasureText(displayText, out var textBounds);
 
                 using (new SKAutoCanvasRestore(this._skCanvas))
                 {
@@ -73,16 +72,16 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     {
                         switch (textField.Font.FieldOrientation)
                         {
-                            case Label.FieldOrientation.Rotated90:
+                            case FieldOrientation.Rotated90:
                                 matrix = SKMatrix.CreateRotationDegrees(90, x + fontSize / 2, y + fontSize / 2);
                                 break;
-                            case Label.FieldOrientation.Rotated180:
+                            case FieldOrientation.Rotated180:
                                 matrix = SKMatrix.CreateRotationDegrees(180, x + textBounds.Width / 2, y + fontSize / 2);
                                 break;
-                            case Label.FieldOrientation.Rotated270:
+                            case FieldOrientation.Rotated270:
                                 matrix = SKMatrix.CreateRotationDegrees(270, x + textBounds.Width / 2, y + textBounds.Width / 2);
                                 break;
-                            case Label.FieldOrientation.Normal:
+                            case FieldOrientation.Normal:
                                 break;
                         }
                         fieldJustification = textField.FieldOrigin.FieldJustification;
@@ -91,16 +90,16 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     {
                         switch (textField.Font.FieldOrientation)
                         {
-                            case Label.FieldOrientation.Rotated90:
+                            case FieldOrientation.Rotated90:
                                 matrix = SKMatrix.CreateRotationDegrees(90, x, y);
                                 break;
-                            case Label.FieldOrientation.Rotated180:
+                            case FieldOrientation.Rotated180:
                                 matrix = SKMatrix.CreateRotationDegrees(180, x, y);
                                 break;
-                            case Label.FieldOrientation.Rotated270:
+                            case FieldOrientation.Rotated270:
                                 matrix = SKMatrix.CreateRotationDegrees(270, x, y);
                                 break;
-                            case Label.FieldOrientation.Normal:
+                            case FieldOrientation.Normal:
                                 break;
                         }
                         fieldJustification = textField.FieldTypeset.FieldJustification;
@@ -110,7 +109,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     {
                         var currentMatrix = _skCanvas.TotalMatrix;
                         var concatMatrix = SKMatrix.Concat(currentMatrix, matrix);
-                        this._skCanvas.SetMatrix(concatMatrix);
+                        this._skCanvas.SetMatrix(in concatMatrix);
                     }
 
                     if (textField.FieldTypeset == null)
@@ -123,26 +122,29 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         skPaint.BlendMode = SKBlendMode.Xor;
                     }
 
-                    if (fieldJustification == Label.FieldJustification.Left)
+                    SKTextAlign align = default;
+
+                    if (fieldJustification == FieldJustification.Left)
                     {
-                        skPaint.TextAlign = SKTextAlign.Left;
+                        align = SKTextAlign.Left;
+                        
                     }
-                    else if (fieldJustification == Label.FieldJustification.Right)
+                    else if (fieldJustification == FieldJustification.Right)
                     {
-                        skPaint.TextAlign = SKTextAlign.Right;
+                        align = SKTextAlign.Right;
                     }
-                    else if (fieldJustification == Label.FieldJustification.Auto)
+                    else if (fieldJustification == FieldJustification.Auto)
                     {
                         var buffer = new HarfBuzzSharp.Buffer();
                         buffer.AddUtf16(displayText);
                         buffer.GuessSegmentProperties();
                         if (buffer.Direction == HarfBuzzSharp.Direction.RightToLeft)
                         {
-                            skPaint.TextAlign = SKTextAlign.Right;
+                            align = SKTextAlign.Right;
                         }
                     }
 
-                    this._skCanvas.DrawShapedText(displayText, x, y, skPaint);
+                    this._skCanvas.DrawShapedText(displayText, x, y, align, skFont, skPaint);
 
                 }
             }

@@ -14,7 +14,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
         static BarcodeEAN13ElementDrawer()
         {
-            foreach (int idx in new int[] { 0, 2, 46, 48, 92, 94 })
+            foreach (int idx in new[] { 0, 2, 46, 48, 92, 94 })
             {
                 guards[idx] = true;
             }
@@ -83,7 +83,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         {
             using (new SKAutoCanvasRestore(this._skCanvas))
             {
-                using var skPaint = new SKPaint(skFont);
+                using var skPaint = new SKPaint();
                 skPaint.IsAntialias = options.Antialias;
 
                 SKMatrix matrix = this.GetRotationMatrix(x, y, barcodeWidth, barcodeHeight, useFieldOrigin, fieldOrientation);
@@ -92,11 +92,10 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 {
                     var currentMatrix = _skCanvas.TotalMatrix;
                     var concatMatrix = SKMatrix.Concat(currentMatrix, matrix);
-                    this._skCanvas.SetMatrix(concatMatrix);
+                    this._skCanvas.SetMatrix(in concatMatrix);
                 }
 
-                var textBounds = new SKRect();
-                skPaint.MeasureText(interpretation, ref textBounds);
+                skFont.MeasureText(interpretation, out var textBounds);
 
                 if (!useFieldOrigin)
                 {
@@ -113,9 +112,8 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 for (int i = 0; i < interpretation.Length; i++)
                 {
                     string digit = interpretation[i].ToString();
-                    var digitBounds = new SKRect();
-                    skPaint.MeasureText(digit, ref digitBounds);
-                    this._skCanvas.DrawText(digit, x - (spacing + digitBounds.Width) / 2 - moduleWidth, y + barcodeHeight + textBounds.Height + margin, skPaint);
+                    skFont.MeasureText(digit, out var digitBounds);
+                    this._skCanvas.DrawText(digit, x - (spacing + digitBounds.Width) / 2 - moduleWidth, y + barcodeHeight + textBounds.Height + margin, skFont, skPaint);
                     x += spacing;
                     if (i == 0 || i == 6)
                     {
