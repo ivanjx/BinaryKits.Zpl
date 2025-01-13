@@ -44,6 +44,7 @@ namespace BinaryKits.Zpl.Viewer
                 new Code93BarcodeZplCommandAnalyzer(this._virtualPrinter),
                 new Code128BarcodeZplCommandAnalyzer(this._virtualPrinter),
                 new CodeEAN13BarcodeZplCommandAnalyzer(this._virtualPrinter),
+                new CodeUPCABarcodeZplCommandAnalyzer(this._virtualPrinter),
                 new CommentZplCommandAnalyzer(this._virtualPrinter),
                 new DataMatrixZplCommandAnalyzer(this._virtualPrinter),
                 new DownloadFormatCommandAnalyzer(this._virtualPrinter),

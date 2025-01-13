@@ -71,6 +71,11 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 {
                     return new ZplBarcodeEan13(text, x, y, codeEAN13.Height, moduleWidth, wideBarToNarrowBarWidthRatio, codeEAN13.FieldOrientation, codeEAN13.PrintInterpretationLine, codeEAN13.PrintInterpretationLineAboveCode, bottomToTop);
                 }
+
+                if (this.VirtualPrinter.NextElementFieldData is CodeUPCABarcodeFieldData codeUPCA)
+                {
+                    return new ZplBarcodeUpcA(text, x, y, codeUPCA.Height, moduleWidth, wideBarToNarrowBarWidthRatio, codeUPCA.FieldOrientation, codeUPCA.PrintInterpretationLine, codeUPCA.PrintInterpretationLineAboveCode, codeUPCA.PrintCheckDigit, bottomToTop);
+                }
                 if (this.VirtualPrinter.NextElementFieldData is DataMatrixFieldData dataMatrixFieldData)
                 {
                     return new ZplDataMatrix(text, x, y, dataMatrixFieldData.Height, dataMatrixFieldData.FieldOrientation, bottomToTop);
