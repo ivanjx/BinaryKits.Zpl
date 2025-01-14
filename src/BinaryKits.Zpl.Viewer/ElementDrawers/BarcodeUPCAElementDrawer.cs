@@ -56,7 +56,6 @@ public class BarcodeUPCAElementDrawer : BarcodeDrawerBase
                         options);
                 }
             }
-
         }
     }
 
@@ -101,11 +100,10 @@ public class BarcodeUPCAElementDrawer : BarcodeDrawerBase
 
             for (int i = 0; i < guards.Length; i++)
             {
-                if (i < 10 ||
+                if (i < 11 ||
                     i == 46 ||
-                    i == 47 ||
                     i == 48 ||
-                    i >= 85)
+                    i > 95 - 11)
                 {
                     guards[i] = encoded[i];
                 }
