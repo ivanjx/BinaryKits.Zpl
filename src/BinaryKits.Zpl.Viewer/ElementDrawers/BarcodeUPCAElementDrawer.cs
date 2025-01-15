@@ -14,47 +14,67 @@ public class BarcodeUPCAElementDrawer : BarcodeDrawerBase
 
     public override void Draw(ZplElementBase element, DrawerOptions options)
     {
-        if (element is ZplBarcodeUpcA barcode)
+        if (element is not ZplBarcodeUpcA barcode)
         {
-            float x = barcode.PositionX;
-            float y = barcode.PositionY;
+            return;
+        }
+        
+        float x = barcode.PositionX;
+        float y = barcode.PositionY;
 
-            var content = barcode.Content;
-            content = content.PadLeft(11, '0').Substring(0, 11);
-            var interpretation = content;
+        var content = barcode.Content;
+        content = content.PadLeft(11, '0').Substring(0, 11);
+        var interpretation = content;
 
-            int checksum = 0;
-            for (int i = 1; i < 12; i++)
+        int checksum = 0;
+        for (int i = 1; i < 12; i++)
+        {
+            checksum += (content[i - 1] - 48) * (9 - i % 2 * 2);
+        }
+        content = content.Substring(0, 11);
+        interpretation = string.Format("{0}{1}", interpretation, checksum % 10);
+
+        var writer = new EAN13Writer();
+        var result = writer.encode(content.PadLeft(12, '0'));
+        using var resizedImage = this.BoolArrayToSKBitmap(result, barcode.Height, barcode.ModuleWidth);
+        var png = resizedImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
+        this.DrawBarcode(png, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null,
+            barcode.FieldOrientation);
+
+        if (barcode.PrintInterpretationLine)
+        {
+            float labelFontSize = Math.Min(barcode.ModuleWidth * 10f, 100f);
+            var labelTypeFace = options.FontLoader("A");
+            var labelFont = new SKFont(labelTypeFace, labelFontSize);
+            if (barcode.PrintInterpretationLineAboveCode)
             {
-                checksum += (content[i - 1] - 48) * (9 - i % 2 * 2);
+                this.DrawInterpretationLine(
+                    interpretation,
+                    labelFont,
+                    x,
+                    y,
+                    resizedImage.Width,
+                    resizedImage.Height,
+                    barcode.FieldOrigin != null,
+                    barcode.FieldOrientation,
+                    true,
+                    options);
             }
-            content = content.Substring(0, 11);
-            interpretation = string.Format("{0}{1}", interpretation, checksum % 10);
-
-            var writer = new EAN13Writer();
-            var result = writer.encode(content.PadLeft(12, '0'));
-            using var resizedImage = this.BoolArrayToSKBitmap(result, barcode.Height, barcode.ModuleWidth);
-            var png = resizedImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
-            this.DrawBarcode(png, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null,
-                barcode.FieldOrientation);
-
-            if (barcode.PrintInterpretationLine)
+            else
             {
-                float labelFontSize = Math.Min(barcode.ModuleWidth * 10f, 100f);
-                var labelTypeFace = options.FontLoader("A");
-                var labelFont = new SKFont(labelTypeFace, labelFontSize);
-                if (barcode.PrintInterpretationLineAboveCode)
-                {
-                    this.DrawInterpretationLine(interpretation, labelFont, x, y, resizedImage.Width,
-                        resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, true, options);
-                }
-                else
-                {
-                    this.DrawUPCAInterpretationLine(result, interpretation, labelFont, x, y, resizedImage.Width,
-                        resizedImage.Height, barcode.FieldOrigin != null, barcode.PrintCheckDigit,
-                        barcode.FieldOrientation, barcode.ModuleWidth,
-                        options);
-                }
+                this.DrawUPCAInterpretationLine(
+                    result,
+                    interpretation,
+                    labelFont,
+                    x,
+                    y,
+                    resizedImage.Width,
+                    resizedImage.Height,
+                    barcode.FieldOrigin != null,
+                    barcode.PrintCheckDigit,
+                    barcode.FieldOrientation,
+                    barcode.ModuleWidth,
+                    options);
             }
         }
     }
