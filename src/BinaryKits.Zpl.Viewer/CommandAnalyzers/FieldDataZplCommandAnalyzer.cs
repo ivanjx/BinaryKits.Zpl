@@ -80,6 +80,11 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 {
                     return new ZplBarcodeUpcExtension(text, x, y, codeUPCExtension.Height, moduleWidth, wideBarToNarrowBarWidthRatio, codeUPCExtension.FieldOrientation, codeUPCExtension.PrintInterpretationLine, codeUPCExtension.PrintInterpretationLineAboveCode, bottomToTop);
                 }
+
+                if (this.VirtualPrinter.NextElementFieldData is CodeUPCEBarcodeFieldData codeUPCE)
+                {
+                    return new ZplBarcodeUpcE(text, x, y, codeUPCE.Height, moduleWidth, wideBarToNarrowBarWidthRatio, codeUPCE.FieldOrientation, codeUPCE.PrintInterpretationLine, codeUPCE.PrintInterpretationLineAboveCode, codeUPCE.PrintCheckDigit, bottomToTop);
+                }
                 if (this.VirtualPrinter.NextElementFieldData is DataMatrixFieldData dataMatrixFieldData)
                 {
                     return new ZplDataMatrix(text, x, y, dataMatrixFieldData.Height, dataMatrixFieldData.FieldOrientation, bottomToTop);
