@@ -10,7 +10,7 @@ namespace BinaryKits.Zpl.Label.Elements
         //^A
         public ZplFont Font { get; protected set; }
         //^FH
-        public bool UseHexadecimalIndicator { get; protected set; }
+        public char HexadecimalIndicator { get; protected set; }
         //^FR
         public bool ReversePrint { get; protected set; }
 
@@ -27,7 +27,7 @@ namespace BinaryKits.Zpl.Label.Elements
         /// <param name="positionY"></param>
         /// <param name="font"></param>
         /// <param name="newLineConversion"></param>
-        /// <param name="useHexadecimalIndicator"></param>
+        /// <param name="hexadecimalIndicator"></param>
         /// <param name="reversePrint"></param>
         /// <param name="bottomToTop"></param>
         /// <param name="fieldJustification"></param>
@@ -37,7 +37,7 @@ namespace BinaryKits.Zpl.Label.Elements
             int positionY,
             ZplFont font,
             NewLineConversionMethod newLineConversion = NewLineConversionMethod.ToSpace,
-            bool useHexadecimalIndicator = true,
+            char hexadecimalIndicator = default,
             bool reversePrint = false,
             bool bottomToTop = false,
             FieldJustification fieldJustification = FieldJustification.None)
@@ -45,7 +45,7 @@ namespace BinaryKits.Zpl.Label.Elements
         {
             Text = text;
             Font = font;
-            UseHexadecimalIndicator = useHexadecimalIndicator;
+            this.HexadecimalIndicator = hexadecimalIndicator;
             NewLineConversion = newLineConversion;
             ReversePrint = reversePrint;
         }
@@ -64,7 +64,7 @@ namespace BinaryKits.Zpl.Label.Elements
         protected string RenderFieldDataSection()
         {
             var sb = new StringBuilder();
-            if (UseHexadecimalIndicator)
+            if (this.HexadecimalIndicator != default)
             {
                 sb.Append("^FH");
             }
@@ -78,7 +78,7 @@ namespace BinaryKits.Zpl.Label.Elements
                 sb.Append("^FD");
                 foreach (var c in Text)
                 {
-                    sb.Append(SanitizeCharacter(c, NewLineConversion, UseHexadecimalIndicator));
+                    sb.Append(SanitizeCharacter(c, NewLineConversion, this.HexadecimalIndicator != default));
                 }
 
                 sb.Append("^FS");

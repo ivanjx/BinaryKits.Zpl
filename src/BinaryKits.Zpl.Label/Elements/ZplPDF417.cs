@@ -16,6 +16,7 @@ namespace BinaryKits.Zpl.Label.Elements
         public int? Rows { get; protected set; }
         public bool Compact { get; protected set; }
         public int SecurityLevel { get; protected set; }
+        public char HexadecimalIndicator { get; protected set; }
 
         /// <summary>
         /// Zpl PDF417 barcode
@@ -31,6 +32,7 @@ namespace BinaryKits.Zpl.Label.Elements
         /// <param name="fieldOrientation"></param>
         /// <param name="securityLevel">1-8 This determines the number of error detection and correction code-words to be generated for the symbol.The default level (0) provides only error detection without correction.Increasing the security level adds increasing levels of error correction and increases the symbol size.</param>
         /// <param name="bottomToTop"></param>
+        /// <param name="hexadecimalIndicator"></param>
         public ZplPDF417(
             string content,
             int positionX,
@@ -42,8 +44,8 @@ namespace BinaryKits.Zpl.Label.Elements
             bool compact = false,
             int securityLevel = 0,
             FieldOrientation fieldOrientation = FieldOrientation.Normal,
-            bool bottomToTop = false
-            )
+            bool bottomToTop = false,
+            char hexadecimalIndicator = default)
             : base(positionX, positionY, bottomToTop)
         {
             FieldOrientation = fieldOrientation;
@@ -54,6 +56,7 @@ namespace BinaryKits.Zpl.Label.Elements
             Compact = compact;
             SecurityLevel = securityLevel;
             Content = content;
+            HexadecimalIndicator = hexadecimalIndicator;
         }
 
         

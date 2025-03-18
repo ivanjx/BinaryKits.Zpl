@@ -7,6 +7,8 @@ namespace BinaryKits.Zpl.Label.Elements
     /// </summary>
     public class ZplDataMatrix : ZplPositionedElementBase, IFormatElement
     {
+        public char HexadecimalIndicator { get; protected set; }
+
         /// <summary>
         /// Data Matrix Bar Code
         /// </summary>
@@ -16,19 +18,21 @@ namespace BinaryKits.Zpl.Label.Elements
         /// <param name="height"></param>
         /// <param name="fieldOrientation"></param>
         /// <param name="bottomToTop"></param>
+        /// <param name="hexadecimalIndicator"></param>
         public ZplDataMatrix(
             string content,
             int positionX,
             int positionY,
             int height = 100,
             FieldOrientation fieldOrientation = FieldOrientation.Normal,
-            bool bottomToTop = false
-           )
+            bool bottomToTop = false,
+            char hexadecimalIndicator = default)
             : base(positionX, positionY, bottomToTop)
         {
             Content = content;
             FieldOrientation = fieldOrientation;
             Height = height;
+            HexadecimalIndicator = hexadecimalIndicator;
         }
 
         public int Height { get; protected set; }

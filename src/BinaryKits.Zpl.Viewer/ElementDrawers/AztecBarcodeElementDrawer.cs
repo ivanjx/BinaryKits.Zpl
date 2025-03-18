@@ -25,9 +25,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 var content = aztecBarcode.Content;
 
-                if (aztecBarcode.UseHexadecimalIndicator)
+                if (aztecBarcode.HexadecimalIndicator != default)
                 {
-                    content = content.ReplaceHexEscapes();
+                    content = content.ReplaceHexEscapes(aztecBarcode.HexadecimalIndicator);
                 }
 
                 var writer = new AztecWriter();
@@ -47,10 +47,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 else if (aztecBarcode.ErrorControl == 300)
                 {
                     options.PureBarcode = true;
-                }
-                else
-                {
-                    // default options
                 }
 
                 var result = writer.encode(content, ZXing.BarcodeFormat.AZTEC, 0, 0, options.Hints);

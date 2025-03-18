@@ -23,7 +23,7 @@ namespace BinaryKits.Zpl.Viewer
         public FontInfo NextFont { get; private set; }
 
         public bool NextElementFieldReverse { get; private set; }
-        public bool NextElementFieldUseHexadecimalIndicator { get; private set; }
+        public char NextElementFieldHexadecimalIndicator { get; private set; }
         public FieldJustification NextElementFieldJustification { get; private set; } = FieldJustification.None;
         public bool LabelReverse { get; private set; }
         public BarcodeInfo BarcodeInfo { get; private set; }
@@ -91,14 +91,14 @@ namespace BinaryKits.Zpl.Viewer
             this.NextElementFieldReverse = false;
         }
 
-        public void SetNextElementFieldUseHexadecimalIndicator()
+        public void SetNextElementFieldUseHexadecimalIndicator(char indicator)
         {
-            this.NextElementFieldUseHexadecimalIndicator = true;
+            this.NextElementFieldHexadecimalIndicator = indicator;
         }
 
         public void ClearNextElementFieldUseHexadecimalIndicator()
         {
-            this.NextElementFieldUseHexadecimalIndicator = false;
+            this.NextElementFieldHexadecimalIndicator = default;
         }
 
         public void SetNextElementFieldJustification(FieldJustification fieldJustification)

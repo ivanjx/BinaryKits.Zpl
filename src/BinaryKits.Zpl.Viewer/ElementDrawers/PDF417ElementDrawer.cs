@@ -1,4 +1,5 @@
 using BinaryKits.Zpl.Label.Elements;
+using BinaryKits.Zpl.Viewer.Helpers;
 using SkiaSharp;
 using System.Collections.Generic;
 using ZXing;
@@ -77,8 +78,14 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     { EncodeHintType.ERROR_CORRECTION, ConvertErrorCorrection(pdf417.SecurityLevel) },
                     { EncodeHintType.PDF417_DIMENSIONS, new Dimensions(mincols, maxcols, minrows, maxrows) },
                 };
-            
-                var default_bitmatrix = writer.encode(pdf417.Content, BarcodeFormat.PDF_417, 0, 0, hints);
+
+                var content = pdf417.Content;
+                if (pdf417.HexadecimalIndicator != default)
+                {
+                    content = content.ReplaceHexEscapes(pdf417.HexadecimalIndicator);
+                }
+                
+                var default_bitmatrix = writer.encode(content, BarcodeFormat.PDF_417, 0, 0, hints);
                 
                 //PDF417_ASPECT_RATIO set to 3, we need to multiply that with pdf417.ModuleWidth (defined by ^BY)
                 var bar_height = pdf417.ModuleWidth * 3;

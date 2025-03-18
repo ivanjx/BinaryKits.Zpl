@@ -10,18 +10,16 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
         ///<inheritdoc/>
         public override ZplElementBase Analyze(string zplCommand)
         {
-            this.VirtualPrinter.SetNextElementFieldUseHexadecimalIndicator();
             var zplDataParts = this.SplitCommand(zplCommand);
 
-            char Indicator = '_';
-
+            char indicator = '_';
+            
             if ((zplDataParts.Length > 0) && (zplDataParts[0].Length > 0))
             {
-                Indicator = zplDataParts[0][0];
+                indicator = zplDataParts[0][0];
             }
 
-            StringHelper.ReplaceChar = Indicator;
-
+            this.VirtualPrinter.SetNextElementFieldUseHexadecimalIndicator(indicator);
             return null;
         }
     }

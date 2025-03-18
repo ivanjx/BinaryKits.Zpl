@@ -15,6 +15,8 @@ namespace BinaryKits.Zpl.Label.Elements
         public int MaskValue { get; private set; }
 
         public FieldOrientation FieldOrientation { get; protected set; }
+        
+        public char HexadecimalIndicator { get; protected set; }
 
         /// <summary>
         /// Zpl QrCode
@@ -28,6 +30,7 @@ namespace BinaryKits.Zpl.Label.Elements
         /// <param name="maskValue">0-7, (default: 7)</param>
         ///  <param name="fieldOrientation"></param>
         /// <param name="bottomToTop"></param>
+        /// <param name="hexadecimalIndicator"></param>
         public ZplQrCode(
             string content,
             int positionX,
@@ -37,7 +40,8 @@ namespace BinaryKits.Zpl.Label.Elements
             ErrorCorrectionLevel errorCorrectionLevel = ErrorCorrectionLevel.HighReliability,
             int maskValue = 7,
             FieldOrientation fieldOrientation = FieldOrientation.Normal,
-            bool bottomToTop = false)
+            bool bottomToTop = false,
+            char hexadecimalIndicator = default)
             : base(positionX, positionY, bottomToTop)
         {
             Content = content;
@@ -46,6 +50,7 @@ namespace BinaryKits.Zpl.Label.Elements
             ErrorCorrectionLevel = errorCorrectionLevel;
             MaskValue = maskValue;
             FieldOrientation = fieldOrientation;
+            HexadecimalIndicator = hexadecimalIndicator;
         }
 
         protected string RenderFieldOrientation()

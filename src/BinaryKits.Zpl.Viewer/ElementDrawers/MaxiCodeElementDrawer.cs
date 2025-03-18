@@ -28,9 +28,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 try
                 {
                     //replace hex items before mode 2 and mode 3 specific string manipulation 
-                    if (maxiCode.UseHexadecimalIndicator)
+                    if (maxiCode.HexadecimalIndicator != default)
                     {
-                        content = content.ReplaceHexEscapes();
+                        content = content.ReplaceHexEscapes(maxiCode.HexadecimalIndicator);
                     }
                     
                     if (maxiBarcode.MaxicodeMode == MaxicodeMode.Mode2)

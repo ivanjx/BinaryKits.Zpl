@@ -11,7 +11,7 @@ namespace BinaryKits.Zpl.Label.Elements
         public int SymbolCount { get; protected set; }
         public string IdField { get; protected set; }
         public string Content { get; protected set; }
-        public bool UseHexadecimalIndicator { get; protected set; }
+        public char HexadecimalIndicator { get; protected set; }
         public FieldOrientation FieldOrientation { get; protected set; }
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace BinaryKits.Zpl.Label.Elements
         /// <param name="menuSymbol">menu symbol indicator</param>
         /// <param name="symbolCount">number of symbols for structured append</param>
         /// <param name="idField">optional ID field for structured append</param>
-        /// <param name="useHexadecimalIndicator"></param>
+        /// <param name="hexadecimalIndicator"></param>
         /// <param name="fieldOrientation"></param>
         /// <param name="bottomToTop"></param>
         public ZplAztecBarcode(
@@ -39,7 +39,7 @@ namespace BinaryKits.Zpl.Label.Elements
             bool menuSymbol = false,
             int symbolCount = 1,
             string idField = null,
-            bool useHexadecimalIndicator = true,
+            char hexadecimalIndicator = default,
             FieldOrientation fieldOrientation = FieldOrientation.Normal,
             bool bottomToTop = false
            )
@@ -51,7 +51,7 @@ namespace BinaryKits.Zpl.Label.Elements
             this.ErrorControl = errorControl;
             this.SymbolCount = symbolCount;
             this.IdField = idField;
-            this.UseHexadecimalIndicator = useHexadecimalIndicator;
+            this.HexadecimalIndicator = hexadecimalIndicator;
             this.FieldOrientation = fieldOrientation;
         }
  
