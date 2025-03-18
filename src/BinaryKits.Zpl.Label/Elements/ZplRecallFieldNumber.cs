@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using BinaryKits.Zpl.Label.Helpers;
+using System.Collections.Generic;
 using System.Text;
 
 namespace BinaryKits.Zpl.Label.Elements
@@ -23,7 +24,7 @@ namespace BinaryKits.Zpl.Label.Elements
             sb.Append("^FD");
             foreach (var c in Text)
             {
-                sb.Append(ZplTextField.SanitizeCharacter(c));
+                sb.Append(c.SanitizeCharacter());
             }
 
             var result = new List<string>();

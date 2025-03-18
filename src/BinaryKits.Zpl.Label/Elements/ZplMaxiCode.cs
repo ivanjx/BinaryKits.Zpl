@@ -1,3 +1,4 @@
+using BinaryKits.Zpl.Label.Helpers;
 using System.Collections.Generic;
 using System.Text;
 
@@ -53,27 +54,10 @@ namespace BinaryKits.Zpl.Label.Elements
             var result = new List<string>();
             result.AddRange(RenderPosition(context));
             result.Add($"^BD{Mode},{Position},{Total}");
-            result.Add(RenderFieldDataSection());
+            result.Add(
+                Content.RenderFieldDataSection(HexadecimalIndicator));
 
             return result;
-        }
-        
-        protected string RenderFieldDataSection()
-        {
-            var sb = new StringBuilder();
-            if (this.HexadecimalIndicator != default)
-            {
-                sb.Append("^FH");
-            }
-
-            if (Content != null)
-            {
-                sb.Append("^FD");
-                sb.Append(Content);
-                sb.Append("^FS");
-            }
-
-            return sb.ToString();
         }
 
         /// <inheritdoc />

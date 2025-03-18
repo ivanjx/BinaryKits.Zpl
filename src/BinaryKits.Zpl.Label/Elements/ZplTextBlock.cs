@@ -1,3 +1,4 @@
+using BinaryKits.Zpl.Label.Helpers;
 using System;
 using System.Collections.Generic;
 
@@ -41,7 +42,11 @@ namespace BinaryKits.Zpl.Label.Elements
             result.AddRange(Font.Render(context));
             result.AddRange(RenderPosition(context));
             result.Add($"^TB{RenderFieldOrientation(Font.FieldOrientation)},{context.Scale(Width)},{context.Scale(Height)}");
-            result.Add(RenderFieldDataSection());
+            result.Add(
+                Text.RenderFieldDataSection(
+                    HexadecimalIndicator,
+                    ReversePrint,
+                    NewLineConversion));
 
             return result;
         }

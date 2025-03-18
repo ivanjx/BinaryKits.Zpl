@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BinaryKits.Zpl.Label.Helpers;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -56,82 +57,13 @@ namespace BinaryKits.Zpl.Label.Elements
             var result = new List<string>();
             result.AddRange(Font.Render(context));
             result.AddRange(RenderPosition(context));
-            result.Add(RenderFieldDataSection());
+            result.Add(
+                Text.RenderFieldDataSection(
+                    HexadecimalIndicator,
+                    ReversePrint,
+                    NewLineConversion));
 
             return result;
-        }
-
-        protected string RenderFieldDataSection()
-        {
-            var sb = new StringBuilder();
-            if (this.HexadecimalIndicator != default)
-            {
-                sb.Append("^FH");
-            }
-            if (ReversePrint)
-            {
-                sb.Append("^FR");
-            }
-
-            if (Text != null)
-            {
-                sb.Append("^FD");
-                foreach (var c in Text)
-                {
-                    sb.Append(SanitizeCharacter(c, NewLineConversion, this.HexadecimalIndicator != default));
-                }
-
-                sb.Append("^FS");
-            }
-
-            return sb.ToString();
-        }
-
-        internal static string SanitizeCharacter(
-            char input,
-            NewLineConversionMethod newLineConversion = NewLineConversionMethod.ToSpace,
-            bool useHexadecimalIndicator = true)
-        {
-            if (useHexadecimalIndicator)
-            {
-                //Convert to hex
-                switch (input)
-                {
-                    case '_':
-                    case '^':
-                    case '~':
-                        return "_" + Convert.ToByte(input).ToString("X2");
-                    case '\\':
-                        return " ";
-                }
-            }
-            else
-            {
-                //The field data can be any printable character except those used as command prefixes(^ and ~).
-                //Replace '^', '~'
-                switch (input)
-                {
-                    case '^':
-                    case '~':
-                    case '\\':
-                        return " ";
-                }
-            }
-
-            if (input == '\n')
-            {
-                switch (newLineConversion)
-                {
-                    case NewLineConversionMethod.ToEmpty:
-                        return "";
-                    case NewLineConversionMethod.ToSpace:
-                        return " ";
-                    case NewLineConversionMethod.ToZplNewLine:
-                        return @"\&";
-                }
-            }
-
-            return input.ToString();
         }
 
         /// <inheritdoc />

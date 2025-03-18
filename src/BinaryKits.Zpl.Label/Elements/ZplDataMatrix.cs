@@ -1,3 +1,4 @@
+using BinaryKits.Zpl.Label.Helpers;
 using System.Collections.Generic;
 
 namespace BinaryKits.Zpl.Label.Elements
@@ -55,7 +56,8 @@ namespace BinaryKits.Zpl.Label.Elements
             var result = new List<string>();
             result.AddRange(RenderPosition(context));
             result.Add($"^BX{RenderFieldOrientation()},{context.Scale(Height)}");
-            result.Add($"^FD{Content}^FS");
+            result.Add(
+                Content.RenderFieldDataSection(HexadecimalIndicator));
 
             return result;
         }

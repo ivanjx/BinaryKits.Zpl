@@ -1,3 +1,4 @@
+using BinaryKits.Zpl.Label.Helpers;
 using System.Collections.Generic;
 
 namespace BinaryKits.Zpl.Label.Elements
@@ -67,7 +68,9 @@ namespace BinaryKits.Zpl.Label.Elements
             var result = new List<string>();
             result.AddRange(RenderPosition(context));
             result.Add($"^BQ{RenderFieldOrientation()},{Model},{context.Scale(MagnificationFactor)},{RenderErrorCorrectionLevel(ErrorCorrectionLevel)},{MaskValue}");
-            result.Add($"^FD{RenderErrorCorrectionLevel(ErrorCorrectionLevel)}A,{Content}^FS");
+            string text = $"{RenderErrorCorrectionLevel(ErrorCorrectionLevel)}A,{Content}";
+            result.Add(
+                text.RenderFieldDataSection(HexadecimalIndicator));
 
             return result;
         }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using BinaryKits.Zpl.Label.Helpers;
+using System.Collections.Generic;
 
 namespace BinaryKits.Zpl.Label.Elements
 {
@@ -62,7 +63,8 @@ namespace BinaryKits.Zpl.Label.Elements
             result.AddRange(RenderPosition(context));
             result.Add($"^BO{RenderFieldOrientation(this.FieldOrientation)},{this.MagnificationFactor},{RenderBoolean(this.ExtendedChannel)}," +
                 $"{this.ErrorControl},{RenderBoolean(this.MenuSymbol)},{this.SymbolCount},{this.IdField}");
-            result.Add($"^FD{this.Content}^FS");
+            result.Add(
+                Content.RenderFieldDataSection(HexadecimalIndicator));
 
             return result;
         }
