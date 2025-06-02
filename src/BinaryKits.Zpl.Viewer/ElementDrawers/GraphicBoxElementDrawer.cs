@@ -80,6 +80,33 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 this._skCanvas.DrawLine(start, end, skPaint);
             }
+            else if (element is ZplGraphicEllipse ellipse)
+            {
+                var border = ellipse.BorderThickness;
+                var width = ellipse.Width;
+                var height = ellipse.Height;
+                var x = ellipse.PositionX;
+                var y = ellipse.PositionY;
+
+                using var skPaint = new SKPaint()
+                {
+                    IsAntialias = options.Antialias,
+                    Style = SKPaintStyle.Stroke,
+                    StrokeCap = SKStrokeCap.Round,
+                    Color = ellipse.LineColor == LineColor.White ? SKColors.White : SKColors.Black,
+                    StrokeWidth = border
+                };
+
+                // Center the ellipse based on border
+                var rect = new SKRect(
+                    x + border / 2f,
+                    y + border / 2f,
+                    x + width - border / 2f,
+                    y + height - border / 2f
+                );
+
+                this._skCanvas.DrawOval(rect, skPaint);
+            }
             else if (element is ZplGraphicBox graphicBox)
             {
                 var border1 = graphicBox.BorderThickness;
