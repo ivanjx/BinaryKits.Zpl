@@ -46,7 +46,41 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         ///<inheritdoc/>
         public override void Draw(ZplElementBase element, DrawerOptions options)
         {
-            if (element is ZplGraphicBox graphicBox)
+            if (element is ZplGraphicDiagonalLine diagonalLine)
+            {
+                var border = diagonalLine.BorderThickness;
+                var width = diagonalLine.Width;
+                var height = diagonalLine.Height;
+                var x = diagonalLine.PositionX;
+                var y = diagonalLine.PositionY;
+
+                using var skPaint = new SKPaint()
+                {
+                    IsAntialias = options.Antialias,
+                    Style = SKPaintStyle.Stroke,
+                    StrokeCap = SKStrokeCap.Square,
+                    Color = diagonalLine.LineColor == LineColor.White ? SKColors.White : SKColors.Black,
+                    StrokeWidth = border
+                };
+
+                // Corrected: RightLeaningDiagonal = true means bottom-left to top-right
+                SKPoint start, end;
+                if (diagonalLine.RightLeaningDiagonal)
+                {
+                    // Bottom-left to top-right
+                    start = new SKPoint(x, y + height);
+                    end = new SKPoint(x + width, y);
+                }
+                else
+                {
+                    // Top-left to bottom-right
+                    start = new SKPoint(x, y);
+                    end = new SKPoint(x + width, y + height);
+                }
+
+                this._skCanvas.DrawLine(start, end, skPaint);
+            }
+            else if (element is ZplGraphicBox graphicBox)
             {
                 var border1 = graphicBox.BorderThickness;
                 var width1 = graphicBox.Width;
