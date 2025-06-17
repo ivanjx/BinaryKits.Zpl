@@ -27,8 +27,8 @@ namespace BinaryKits.Zpl.Viewer
             }
             this._drawerOptions = drawerOptions;
             this._printerStorage = printerStorage;
-            this._elementDrawers = new IElementDrawer[]
-            {
+            this._elementDrawers =
+            [
                 new AztecBarcodeElementDrawer(),
                 new Barcode128ElementDrawer(),
                 new Barcode39ElementDrawer(),
@@ -50,7 +50,8 @@ namespace BinaryKits.Zpl.Viewer
                 new RecallGraphicElementDrawer(),
                 new TextFieldElementDrawer(),
                 new BarcodeAnsiCodabarElementDrawer(),
-            };
+                new BarcodeMsiElementDrawer()
+            ];
         }
 
         /// <summary>

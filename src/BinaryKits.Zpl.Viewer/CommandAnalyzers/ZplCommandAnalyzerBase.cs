@@ -84,5 +84,17 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
 
             return index;
         }
+
+        protected MsiBarcodeCheckDigitMode ConvertCheckDigitSelection(string checkDigitSelection)
+        {
+            return checkDigitSelection switch
+            {
+                "A" => MsiBarcodeCheckDigitMode.None,
+                "B" => MsiBarcodeCheckDigitMode.Mod1_10,
+                "C" => MsiBarcodeCheckDigitMode.Mod2_10,
+                "D" => MsiBarcodeCheckDigitMode.Mod_1_11_1_10,
+                _ => MsiBarcodeCheckDigitMode.Mod1_10
+            };
+        }
     }
 }
