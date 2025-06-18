@@ -25,11 +25,16 @@ public class BarcodeUPCExtensionElementDrawer : BarcodeDrawerBase
         var content = barcode.Content;
         var interpretation = content;
 
+        if (content == null ||
+            (content.Length != 2 && content.Length != 5))
+        {
+            return;
+        }
+
         Barcode drawer = new();
-        drawer.EncodedType = 
-            content.Length == 5 ? BarcodeStandard.Type.UpcSupplemental5Digit :
-            content.Length == 2 ? BarcodeStandard.Type.UpcSupplemental2Digit :
-            throw new ArgumentException("Invalid length");
+        drawer.EncodedType = content.Length == 5 ?
+            BarcodeStandard.Type.UpcSupplemental5Digit :
+            BarcodeStandard.Type.UpcSupplemental2Digit;
         var result = drawer.GenerateBarcode(content)
             .Select(x => x == '1')
             .ToArray();
