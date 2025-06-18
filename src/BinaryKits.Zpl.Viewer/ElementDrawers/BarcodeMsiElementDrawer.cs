@@ -23,7 +23,7 @@ public class BarcodeMsiElementDrawer : BarcodeDrawerBase
 
         float x = msi.PositionX;
         float y = msi.PositionY;
-        string content = msi.Content.Trim();
+        string content = msi.Content;
         string checkDigit = msi.CheckDigitMode switch
         {
             MsiBarcodeCheckDigitMode.None => NoCheck(content),
