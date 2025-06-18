@@ -50,7 +50,8 @@ namespace BinaryKits.Zpl.Viewer
                 new RecallGraphicElementDrawer(),
                 new TextFieldElementDrawer(),
                 new BarcodeAnsiCodabarElementDrawer(),
-                new BarcodeMsiElementDrawer()
+                new BarcodeMsiElementDrawer(),
+                new BarcodeLogmarsElementDrawer()
             ];
         }
 

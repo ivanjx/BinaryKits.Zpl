@@ -118,6 +118,10 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 {
                     return new ZplBarcodeMsi(text, x, y, msi.Height, moduleWidth, wideBarToNarrowBarWidthRatio, msi.FieldOrientation, msi.CheckDigitSelection, msi.PrintInterpretationLine, msi.PrintInterpretationLineAboveCode, msi.PrintInterpretationLineWithCheckDigit, bottomToTop);
                 }
+                if (this.VirtualPrinter.NextElementFieldData is CodeLogmarsBarcodeFieldData logmars)
+                {
+                    return new ZplBarcodeLogmars(text, x, y, logmars.Height, moduleWidth, wideBarToNarrowBarWidthRatio, logmars.FieldOrientation, logmars.PrintInterpretationLineAboveCode, bottomToTop);
+                }
             }
 
             var font = this.GetFontFromVirtualPrinter();
