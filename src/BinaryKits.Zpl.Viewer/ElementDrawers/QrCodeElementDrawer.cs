@@ -33,6 +33,12 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 // support hand-rolled GS1
                 bool gs1Mode = false;
                 var content = qrcode.Content;
+
+                if (string.IsNullOrEmpty(content))
+                {
+                    return;
+                }
+
                 if (qrcode.HexadecimalIndicator != default)
                 {
                     content = content.ReplaceHexEscapes(qrcode.HexadecimalIndicator);

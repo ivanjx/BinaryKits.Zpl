@@ -25,9 +25,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 float y = barcode.PositionY;
                 char start = barcode.StartCharacter;
                 char end = barcode.StopCharacter;
-
                 var content = barcode.Content.Trim('*');
                 var interpretation = $"{start}{content}{end}";
+
+                if (string.IsNullOrEmpty(content))
+                {
+                    return;
+                }
 
                 var writer = new CodaBarWriter();
                 var result = writer.encode(content);

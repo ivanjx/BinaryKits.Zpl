@@ -21,6 +21,11 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         {
             if (element is ZplBarcodeInterleaved2of5 barcode)
             {
+                if (string.IsNullOrEmpty(barcode.Content))
+                {
+                    return;
+                }
+
                 float x = barcode.PositionX;
                 float y = barcode.PositionY;
 

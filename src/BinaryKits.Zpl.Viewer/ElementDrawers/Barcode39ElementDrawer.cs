@@ -25,6 +25,12 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 float y = barcode.PositionY;
 
                 var content = barcode.Content.Trim('*');
+
+                if (string.IsNullOrEmpty(content))
+                {
+                    return;
+                }
+
                 var interpretation = string.Format("*{0}*", content);
 
                 var writer = new Code39Writer();

@@ -19,6 +19,11 @@ public class BarcodeLogmarsElementDrawer : BarcodeDrawerBase
             return;
         }
 
+        if (string.IsNullOrEmpty(barcode.Content))
+        {
+            return;
+        }
+
         float x = barcode.PositionX;
         float y = barcode.PositionY;
         string content = barcode.Content;

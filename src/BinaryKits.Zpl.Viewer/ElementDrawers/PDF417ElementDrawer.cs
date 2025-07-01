@@ -26,10 +26,10 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             if (element is ZplPDF417 pdf417)
             {
                 if (pdf417.Height == 0)
-                    throw new System.Exception("PDF417 Height is set to zero.");
+                    return;
 
                 if (string.IsNullOrWhiteSpace(pdf417.Content))
-                    throw new System.Exception("PDF147 Content is empty.");
+                    return;
 
                 float x = pdf417.PositionX;
                 float y = pdf417.PositionY;

@@ -25,6 +25,11 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 var content = aztecBarcode.Content;
 
+                if (string.IsNullOrEmpty(content))
+                {
+                    return;
+                }
+
                 if (aztecBarcode.HexadecimalIndicator != default)
                 {
                     content = content.ReplaceHexEscapes(aztecBarcode.HexadecimalIndicator);

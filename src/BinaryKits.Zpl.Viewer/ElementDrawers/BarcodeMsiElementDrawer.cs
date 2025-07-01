@@ -21,6 +21,11 @@ public class BarcodeMsiElementDrawer : BarcodeDrawerBase
             return;
         }
 
+        if (string.IsNullOrEmpty(msi.Content))
+        {
+            return;
+        }
+
         float x = msi.PositionX;
         float y = msi.PositionY;
         string content = msi.Content;

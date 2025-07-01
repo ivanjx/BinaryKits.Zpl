@@ -2,6 +2,7 @@ using BinaryKits.Zpl.Label.Elements;
 using BinaryKits.Zpl.Viewer.Symologies;
 using SkiaSharp;
 using System;
+using System.Collections.Generic;
 
 namespace BinaryKits.Zpl.Viewer.ElementDrawers
 {
@@ -22,6 +23,12 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             if (element is ZplBarcode128 barcode)
             {
                 string content = barcode.Content;
+
+                if (string.IsNullOrEmpty(content))
+                {
+                    return;
+                }
+
                 Code128CodeSet codeSet = Code128CodeSet.Code128B;
                 bool gs1 = false;
                 if (string.IsNullOrEmpty(barcode.Mode) || barcode.Mode == "N")
@@ -52,7 +59,18 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 float x = barcode.PositionX;
                 float y = barcode.PositionY;
 
-                var (data, interpretation) = ZplCode128Symbology.Encode(content, codeSet, gs1);
+                List<bool> data;
+                string interpretation;
+                
+                try
+                {
+                    (data, interpretation) = ZplCode128Symbology.Encode(content, codeSet, gs1);
+                }
+                catch
+                {
+                    return;
+                }
+
                 using var resizedImage = this.BoolArrayToSKBitmap(data.ToArray(), barcode.Height, barcode.ModuleWidth);
                 var png = resizedImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
                 this.DrawBarcode(png, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation);

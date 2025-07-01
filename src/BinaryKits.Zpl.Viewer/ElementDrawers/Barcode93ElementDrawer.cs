@@ -29,6 +29,11 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 var content = barcode.Content;
 
+                if (string.IsNullOrEmpty(content))
+                {
+                    return;
+                }
+
                 var writer = new Code93Writer();
                 var result = writer.encode(content);
                 using var resizedImage = this.BoolArrayToSKBitmap(result, barcode.Height, barcode.ModuleWidth);

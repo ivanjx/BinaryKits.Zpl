@@ -27,10 +27,10 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             if (element is ZplDataMatrix dataMatrix)
             {
                 if (dataMatrix.Height == 0)
-                    throw new System.Exception("Matrix Height is set to zero.");
+                    return;
 
                 if (string.IsNullOrWhiteSpace(dataMatrix.Content))
-                    throw new System.Exception("Matrix Content is empty.");
+                    return;
 
                 float x = dataMatrix.PositionX;
                 float y = dataMatrix.PositionY;
