@@ -17,11 +17,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         /// </summary>
         public bool OpaqueBackground { get; set; } = false;
 
-        /// <summary>
-        /// Renders the label as pdf
-        /// </summary>
-        public bool PdfOutput { get; set; } = false;
-
         public bool ReplaceDashWithEnDash { get; set; } = true;
 
         public bool Antialias { get; set; } = true;

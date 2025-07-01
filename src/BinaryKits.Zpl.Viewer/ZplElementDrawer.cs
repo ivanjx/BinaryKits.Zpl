@@ -1,20 +1,16 @@
 using BinaryKits.Zpl.Label.Elements;
 using BinaryKits.Zpl.Viewer.ElementDrawers;
-using BinaryKits.Zpl.Viewer.Helpers;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace BinaryKits.Zpl.Viewer
 {
     public class ZplElementDrawer
     {
-        private const int PdfDpi = 72;
-        private const float ZplDpi = 203.2f;
-        private const float PdfScaleFactor = PdfDpi / ZplDpi;
-
         private readonly DrawerOptions _drawerOptions;
         private readonly IPrinterStorage _printerStorage;
         private readonly IElementDrawer[] _elementDrawers;
@@ -56,53 +52,22 @@ namespace BinaryKits.Zpl.Viewer
         }
 
         /// <summary>
-        /// Draw the label
-        /// </summary>
-        /// <param name="elements">Zpl elements</param>
-        /// <param name="labelWidth">Label width in millimeter</param>
-        /// <param name="labelHeight">Label height in millimeter</param>
-        /// <param name="printDensityDpmm">Dots per millimeter</param>
-        /// <returns></returns>
-        public byte[] Draw(
-            ZplElementBase[] elements,
-            double labelWidth = 101.6,
-            double labelHeight = 152.4,
-            int printDensityDpmm = 8)
-        {
-            return this.DrawMulti(elements, labelWidth, labelHeight, printDensityDpmm)[0];
-        }
-
-        /// <summary>
-        /// Draw the label as PDF
-        /// </summary>
-        /// <param name="elements">Zpl elements</param>
-        /// <param name="labelWidth">Label width in millimeter</param>
-        /// <param name="labelHeight">Label height in millimeter</param>
-        /// <param name="printDensityDpmm">Dots per millimeter</param>
-        /// <returns></returns>
-        public byte[] DrawPdf(
-            ZplElementBase[] elements,
-            double labelWidth = 101.6,
-            double labelHeight = 152.4,
-            int printDensityDpmm = 8)
-        {
-            return this.DrawMulti(elements, labelWidth, labelHeight, printDensityDpmm)[1];
-        }
-
-        /// <summary>
         /// Draw the label on multiple canvases
         /// </summary>
         /// <param name="elements">Zpl elements</param>
         /// <param name="labelWidth">Label width in millimeter</param>
         /// <param name="labelHeight">Label height in millimeter</param>
         /// <param name="printDensityDpmm">Dots per millimeter</param>
+        /// <param name="logger"></param>
         /// <returns></returns>
-        public List<byte[]> DrawMulti(
+        public byte[] Draw(
             ZplElementBase[] elements,
             double labelWidth = 101.6,
             double labelHeight = 152.4,
-            int printDensityDpmm = 8)
+            int printDensityDpmm = 8,
+            ILogger logger = null)
         {
+            logger ??= NullLogger.Instance;
             var result = new List<byte[]>();
             var imageHistory = new List<SKImage>();
             var labelImageWidth = Convert.ToInt32(labelWidth * printDensityDpmm);
@@ -116,22 +81,6 @@ namespace BinaryKits.Zpl.Viewer
             var surface = SKSurface.Create(info);
             using var skImageCanvas = surface.Canvas;
             skCanvas.AddCanvas(skImageCanvas);
-
-            //add PDF canvas
-            // - When drawing PDF we need the Bitmap as well to fix inverted coloring
-            Stream pdfStream = new MemoryStream();
-            using var document = SKDocument.CreatePdf(pdfStream);
-
-            using var pdfCanvas = document.BeginPage(
-                (float)(UnitsHelper.ConvertMillimetersToInches(labelWidth) * PdfDpi),
-                (float)(UnitsHelper.ConvertMillimetersToInches(labelHeight) * PdfDpi));
-            
-            pdfCanvas.Scale(PdfScaleFactor, PdfScaleFactor);
-            
-            if (this._drawerOptions.PdfOutput == true)
-            {
-                skCanvas.AddCanvas(pdfCanvas);
-            }
 
             //make sure to have a transparent canvas for SKBlendMode.Xor to work properly
             skCanvas.Clear(SKColors.Transparent);
@@ -147,22 +96,7 @@ namespace BinaryKits.Zpl.Viewer
                 try
                 {
                     //The inverse drawing is moved to the element drawer, so only collect imageHistory for the PDF 
-                    if ((element is ZplFieldBlock
-                         || element is ZplTextField
-                         || element is ZplGraphicCircle
-                         || element is ZplGraphicBox
-                        )
-                        && drawer.IsReverseDraw(element)
-                        && !drawer.IsWhiteDraw(element)
-                        && !drawer.ForceBitmapDraw(element))
-                    {
-                        //save state before inverted draw
-                        if (this._drawerOptions.PdfOutput == true)
-                        {
-                            imageHistory.Add(surface.Snapshot());
-                        }
-                    }
-                    else if (drawer.IsReverseDraw(element))
+                    if (drawer.IsReverseDraw(element))
                     {
                         //basically only ZplGraphicBox/Circle depending on requirements
                         using var skBitmapInvert = new SKBitmap(labelImageWidth, labelImageHeight);
@@ -171,12 +105,6 @@ namespace BinaryKits.Zpl.Viewer
 
                         drawer.Prepare(this._printerStorage, skCanvasInvert);
                         drawer.Draw(element, _drawerOptions);
-
-                        //save state before inverted draw
-                        if (this._drawerOptions.PdfOutput == true)
-                        {
-                            imageHistory.Add(surface.Snapshot());
-                        }
 
                         //use color inversion on an reverse draw white element
                         if (drawer.IsWhiteDraw(element))
@@ -199,12 +127,12 @@ namespace BinaryKits.Zpl.Viewer
                 catch (Exception ex)
                 {
                     if (element is ZplBarcode barcodeElement)
-                        throw new Exception($"Error on zpl element \"{barcodeElement.Content}\": {ex.Message}", ex);
+                        logger.LogError(ex, $"Error on zpl element \"{barcodeElement.Content}\": {ex.Message}");
                     else if (element is ZplDataMatrix dataMatrixElement)
-                        throw new Exception($"Error on zpl element \"{dataMatrixElement.Content}\": {ex.Message}", ex);
+                        logger.LogError(ex, $"Error on zpl element \"{dataMatrixElement.Content}\": {ex.Message}");
                     else
                     {
-                        throw;
+                        logger.LogError(ex, "Error on zpl element");
                     }
                 }
             }
@@ -226,33 +154,7 @@ namespace BinaryKits.Zpl.Viewer
             }
 
             var imageData = image.Encode(_drawerOptions.RenderFormat, _drawerOptions.RenderQuality);
-            result.Add(imageData.ToArray());
-
-            //only return image
-            if (this._drawerOptions.PdfOutput == false)
-            {
-                result.Add(null);
-                return result;
-            }
-
-            //Fix the PDF blend
-            this.FixPdfInvertDraw(info, imageHistory, surface, skCanvas);
-
-            //close the PDF document
-            document.EndPage();
-            document.Close();
-
-            //try to export the PDF stream to a byte array
-            if (pdfStream is MemoryStream memStream)
-            {
-                result.Add(memStream.ToArray());
-            }
-            else
-            {
-                result.Add(null);
-            }
-
-            return result;
+            return imageData.ToArray();
         }
 
         /// <summary>
@@ -263,13 +165,16 @@ namespace BinaryKits.Zpl.Viewer
         /// <param name="labelWidth">Label width in millimeter</param>
         /// <param name="labelHeight">Label height in millimeter</param>
         /// <param name="printDensityDpmm">Dots per millimeter</param>
+        /// <param name="logger"></param>
         /// <returns></returns>
         public void DrawSurface(SKSurface surface,
             ZplElementBase[] elements,
             double labelWidth = 101.6,
             double labelHeight = 152.4,
-            int printDensityDpmm = 8)
+            int printDensityDpmm = 8,
+            ILogger logger = null)
         {
+            logger ??= NullLogger.Instance;
             var result = new List<byte[]>();
             var imageHistory = new List<SKImage>();
             var labelImageWidth = Convert.ToInt32(labelWidth * printDensityDpmm);
@@ -320,12 +225,12 @@ namespace BinaryKits.Zpl.Viewer
                 catch (Exception ex)
                 {
                     if (element is ZplBarcode barcodeElement)
-                        throw new Exception($"Error on zpl element \"{barcodeElement.Content}\": {ex.Message}", ex);
+                        logger.LogError(ex, $"Error on zpl element \"{barcodeElement.Content}\": {ex.Message}");
                     else if (element is ZplDataMatrix dataMatrixElement)
-                        throw new Exception($"Error on zpl element \"{dataMatrixElement.Content}\": {ex.Message}", ex);
+                        logger.LogError(ex, $"Error on zpl element \"{dataMatrixElement.Content}\": {ex.Message}");
                     else
                     {
-                        throw;
+                        logger.LogError(ex, "Error on zpl element");
                     }
                 }
             }
