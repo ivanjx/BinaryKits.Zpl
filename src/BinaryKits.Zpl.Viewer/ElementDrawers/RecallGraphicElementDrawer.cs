@@ -29,12 +29,22 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 var x = recallGraphic.PositionX;
                 var y = recallGraphic.PositionY;
                 var bitmap = SKBitmap.Decode(imageData);
-                if (recallGraphic.FieldTypeset != null)
+
+                if (bitmap == null)
                 {
-                    y -= bitmap.Height;
+                    return;
                 }
 
-                this._skCanvas.DrawBitmap(bitmap, x, y);
+                int width = bitmap.Width * recallGraphic.MagnificationFactorX;
+                int height = bitmap.Height * recallGraphic.MagnificationFactorY;
+
+                if (recallGraphic.FieldTypeset != null)
+                {
+                    y -= height;
+                }
+
+                var destRect = new SKRect(x, y, x + width, y + height);
+                this._skCanvas.DrawBitmap(bitmap, destRect);
             }
         }
     }
