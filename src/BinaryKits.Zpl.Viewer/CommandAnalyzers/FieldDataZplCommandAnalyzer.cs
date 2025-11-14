@@ -71,20 +71,6 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 {
                     return new ZplBarcodeEan13(text, x, y, codeEAN13.Height, moduleWidth, wideBarToNarrowBarWidthRatio, codeEAN13.FieldOrientation, hexadecimalIndicator, codeEAN13.PrintInterpretationLine, codeEAN13.PrintInterpretationLineAboveCode, bottomToTop, useDefaultPosition);
                 }
-
-                if (this.VirtualPrinter.NextElementFieldData is CodeUPCABarcodeFieldData codeUPCA)
-                {
-                    return new ZplBarcodeUpcA(text, x, y, codeUPCA.Height, moduleWidth, wideBarToNarrowBarWidthRatio, codeUPCA.FieldOrientation, hexadecimalIndicator, codeUPCA.PrintInterpretationLine, codeUPCA.PrintInterpretationLineAboveCode, codeUPCA.PrintCheckDigit, bottomToTop);
-                }
-                if (this.VirtualPrinter.NextElementFieldData is CodeUPCExtensionBarcodeFieldData codeUPCExtension)
-                {
-                    return new ZplBarcodeUpcExtension(text, x, y, codeUPCExtension.Height, moduleWidth, wideBarToNarrowBarWidthRatio, codeUPCExtension.FieldOrientation, hexadecimalIndicator, codeUPCExtension.PrintInterpretationLine, codeUPCExtension.PrintInterpretationLineAboveCode, bottomToTop);
-                }
-
-                if (this.VirtualPrinter.NextElementFieldData is CodeUPCEBarcodeFieldData codeUPCE)
-                {
-                    return new ZplBarcodeUpcE(text, x, y, codeUPCE.Height, moduleWidth, wideBarToNarrowBarWidthRatio, codeUPCE.FieldOrientation, hexadecimalIndicator, codeUPCE.PrintInterpretationLine, codeUPCE.PrintInterpretationLineAboveCode, codeUPCE.PrintCheckDigit, bottomToTop);
-                }
                 else if (this.VirtualPrinter.NextElementFieldData is DataMatrixFieldData dataMatrixFieldData)
                 {
                     return new ZplDataMatrix(text, x, y, dataMatrixFieldData.Height, dataMatrixFieldData.QualityLevel, dataMatrixFieldData.FieldOrientation, hexadecimalIndicator, bottomToTop, useDefaultPosition);
