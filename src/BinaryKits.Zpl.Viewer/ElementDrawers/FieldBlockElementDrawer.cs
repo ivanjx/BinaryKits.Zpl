@@ -35,24 +35,24 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         }
 
         ///<inheritdoc/>
-        public override void Draw(ZplElementBase element, DrawerOptions options)
+        public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont)
         {
             if (element is ZplFieldBlock fieldBlock)
             {
-                var font = fieldBlock.Font;
+                ZplFont font = fieldBlock.Font;
 
                 float fontSize = font.FontHeight > 0 ? font.FontHeight : font.FontWidth;
-                var scaleX = 1.00f;
+                float scaleX = 1.00f;
                 if (font.FontWidth != 0 && font.FontWidth != fontSize)
                 {
                     scaleX *= font.FontWidth / fontSize;
                 }
 
-                var typeface = options.FontLoader(font.FontName);
-                var text = fieldBlock.Text;
-                if (fieldBlock.HexadecimalIndicator != default)
+                SKTypeface typeface = options.FontLoader(font.FontName);
+                string text = fieldBlock.Text;
+                if (fieldBlock.HexadecimalIndicator is char hexIndicator)
                 {
-                    text = text.ReplaceHexEscapes(fieldBlock.HexadecimalIndicator);
+                    text = text.ReplaceHexEscapes(hexIndicator, internationalFont);
                 }
 
                 if (options.ReplaceDashWithEnDash)
@@ -60,23 +60,34 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     text = text.Replace("-", " \u2013 ");
                 }
 
-                var skFont = new SKFont(typeface, fontSize, scaleX);
-                using var skPaint = new SKPaint()
+                if (options.ReplaceUnderscoreWithEnSpace)
+                {
+                    text = text.Replace('_', '\u2002');
+                }
+
+                SKFont skFont = new(typeface, fontSize, scaleX);
+                using SKPaint skPaint = new()
                 {
                     IsAntialias = options.Antialias
                 };
 
-                skFont.MeasureText("X", out var textBoundBaseline);
+                skFont.MeasureText("X", out SKRect textBoundBaseline);
 
                 float x = fieldBlock.PositionX;
                 float y = fieldBlock.PositionY + textBoundBaseline.Height;
 
-                var textLines = WordWrap(text, skFont, fieldBlock.Width);
-                var hangingIndent = 0;
-                var lineHeight = fontSize + fieldBlock.LineSpace;
+                if (fieldBlock.UseDefaultPosition)
+                {
+                    x = currentPosition.X;
+                    y = currentPosition.Y + textBoundBaseline.Height;
+                }
+
+                IEnumerable<string> textLines = WordWrap(text, skFont, fieldBlock.Width);
+                int hangingIndent = 0;
+                float lineHeight = fontSize + fieldBlock.LineSpace;
 
                 // actual ZPL printer does not include trailing line spacing in total height
-                var totalHeight = lineHeight * fieldBlock.MaxLineCount - fieldBlock.LineSpace;
+                float totalHeight = lineHeight * fieldBlock.MaxLineCount - fieldBlock.LineSpace;
                 // labelary
                 //var totalHeight = lineHeight * fieldBlock.MaxLineCount;
 
@@ -86,7 +97,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     y -= totalHeight;
                 }
 
-                using (new SKAutoCanvasRestore(this._skCanvas))
+                using (new SKAutoCanvasRestore(this.skCanvas))
                 {
                     SKMatrix matrix = SKMatrix.Empty;
 
@@ -127,17 +138,17 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                     if (matrix != SKMatrix.Empty)
                     {
-                        var currentMatrix = _skCanvas.TotalMatrix;
-                        var concatMatrix = SKMatrix.Concat(currentMatrix, matrix);
-                        this._skCanvas.SetMatrix(in concatMatrix);
+                        SKMatrix currentMatrix = this.skCanvas.TotalMatrix;
+                        SKMatrix concatMatrix = SKMatrix.Concat(currentMatrix, matrix);
+                        this.skCanvas.SetMatrix(concatMatrix);
                     }
 
-                    foreach (var textLine in textLines)
+                    foreach (string textLine in textLines)
                     {
                         x = fieldBlock.PositionX + hangingIndent;
 
-                        skFont.MeasureText(textLine, out var textBounds);
-                        var diff = fieldBlock.Width - textBounds.Width;
+                        skFont.MeasureText(textLine, out SKRect textBounds);
+                        float diff = fieldBlock.Width - textBounds.Width;
 
                         switch (fieldBlock.TextJustification)
                         {
@@ -160,30 +171,34 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                             skPaint.BlendMode = SKBlendMode.Xor;
                         }
 
-                        this._skCanvas.DrawShapedText(textLine, x, y, skFont, skPaint);
+                        this.skCanvas.DrawShapedText(textLine, x, y, skFont, skPaint);
                         y += lineHeight;
                     }
+
+                    return this.CalculateNextDefaultPosition(fieldBlock.PositionX, fieldBlock.PositionY, fieldBlock.Width, totalHeight, fieldBlock.FieldOrigin != null, fieldBlock.Font.FieldOrientation, currentPosition);
                 }
             }
+
+            return currentPosition;
         }
 
-        private IEnumerable<string> WordWrap(string text, SKFont font, int maxWidth)
+        private static List<string> WordWrap(string text, SKFont font, int maxWidth)
         {
-            var spaceWidth = font.MeasureText(" ");
-            var lines = new List<string>();
+            float spaceWidth = font.MeasureText(" ");
+            List<string> lines = [];
 
-            var words = new Stack<string>(text.Split(new[] { ' ' }, StringSplitOptions.None).Reverse());
-            var line = new StringBuilder();
+            Stack<string> words = new(text.Split([' '], StringSplitOptions.None).Reverse());
+            StringBuilder line = new();
             float width = 0;
-            while (words.Any())
+            while (words.Count != 0)
             {
-                var word = words.Pop();
+                string word = words.Pop();
                 if (word.Contains(@"\&"))
                 {
-                    var subwords = word.Split(new[] { @"\&" }, 2, StringSplitOptions.None);
+                    string[] subwords = word.Split([@"\&"], 2, StringSplitOptions.None);
                     word = subwords[0];
                     words.Push(subwords[1]);
-                    var wordWidth = font.MeasureText(word);
+                    float wordWidth = font.MeasureText(word);
                     if (width + wordWidth <= maxWidth)
                     {
                         line.Append(word);
@@ -204,7 +219,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
                 else
                 {
-                    var wordWidth = font.MeasureText(word);
+                    float wordWidth = font.MeasureText(word);
                     if (width + wordWidth <= maxWidth)
                     {
                         line.Append(word + " ");
@@ -216,6 +231,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         {
                             lines.Add(line.ToString().Trim());
                         }
+
                         line = new StringBuilder(word + " ");
                         width = wordWidth + spaceWidth;
                     }

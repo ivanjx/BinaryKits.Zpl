@@ -4,17 +4,13 @@ using System.Text;
 
 namespace BinaryKits.Zpl.Label.Elements
 {
-    public class ZplMaxiCode : ZplPositionedElementBase, IFormatElement
+    public class ZplMaxiCode : ZplFieldDataElementBase
     {
-        public string Content { get; protected set; }
-
         public int Mode { get; private set; }
 
         public int Position { get; private set; }
 
         public int Total { get; private set; }
-        
-        public char HexadecimalIndicator { get; protected set; }
 
         /// <summary>
         /// Zpl QrCode
@@ -27,6 +23,7 @@ namespace BinaryKits.Zpl.Label.Elements
         /// <param name="total">1-8, (default: 1)</param>
         /// <param name="hexadecimalIndicator"></param>
         /// <param name="bottomToTop"></param>
+        /// <param name="useDefaultPosition"></param>
         public ZplMaxiCode(
             string content,
             int positionX,
@@ -34,15 +31,14 @@ namespace BinaryKits.Zpl.Label.Elements
             int mode = 2,
             int position = 1,
             int total = 1,
-            char hexadecimalIndicator = default,
-            bool bottomToTop = false)
-            : base(positionX, positionY, bottomToTop)
+            char? hexadecimalIndicator = null,
+            bool bottomToTop = false,
+            bool useDefaultPosition = false)
+            : base(content, positionX, positionY, FieldOrientation.Normal, hexadecimalIndicator, bottomToTop, useDefaultPosition)
         {
-            Content = content;
             Mode = mode;
             Position = position;
             Total = total;
-            this.HexadecimalIndicator = hexadecimalIndicator;
         }
 
         ///<inheritdoc/>
@@ -51,19 +47,13 @@ namespace BinaryKits.Zpl.Label.Elements
             //^FO100,100
             //^BD2,1,1
             //^FH^FD002840100450000_5B)>_1E01_1D961Z00136071_1DUPSN_1D123X56_1D028_1D_1D001/001_1D011_1DN_1D_1DNEW YORK_1DNY_1E_04^FS
-            var result = new List<string>();
+            List<string> result = new List<string>();
             result.AddRange(RenderPosition(context));
             result.Add($"^BD{Mode},{Position},{Total}");
             result.Add(
                 Content.RenderFieldDataSection(HexadecimalIndicator));
 
             return result;
-        }
-
-        /// <inheritdoc />
-        public void SetTemplateContent(string content)
-        {
-            Content = content;
         }
     }
 }

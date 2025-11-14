@@ -13,7 +13,7 @@
             ZplFont font,
             TextJustification textJustification = TextJustification.Left,
             NewLineConversionMethod newLineConversion = NewLineConversionMethod.ToSpace,
-            char hexadecimalIndicator = default,
+            char? hexadecimalIndicator = null,
             bool reversePrint = false)
             : base(text, positionX, positionY, width, font, 9999, 9999, textJustification, 0, newLineConversion, hexadecimalIndicator, reversePrint)
         {

@@ -29,10 +29,11 @@ namespace BinaryKits.Zpl.Label.Elements
             TextJustification textJustification = TextJustification.Left,
             int hangingIndent = 0,
             NewLineConversionMethod newLineConversion = NewLineConversionMethod.ToZplNewLine,
-            char hexadecimalIndicator = default,
+            char? hexadecimalIndicator = null,
             bool reversePrint = false,
-            bool bottomToTop = false)
-            : base(text, positionX, positionY, font, newLineConversion, hexadecimalIndicator, reversePrint, bottomToTop)
+            bool bottomToTop = false,
+            bool useDefaultPosition = false)
+            : base(text, positionX, positionY, font, newLineConversion, hexadecimalIndicator, reversePrint, bottomToTop, useDefaultPosition: useDefaultPosition)
         {
             TextJustification = textJustification;
             Width = width;
@@ -68,7 +69,7 @@ namespace BinaryKits.Zpl.Label.Elements
             // preceded by an FB \&command.
             // ^ FS
             // ^ XZ
-            var result = new List<string>();
+            List<string> result = new List<string>();
             result.AddRange(Font.Render(context));
             result.AddRange(RenderPosition(context));
             result.Add($"^FB{context.Scale(Width)},{MaxLineCount},{context.Scale(LineSpace)},{RenderTextJustification()},{context.Scale(HangingIndent)}");

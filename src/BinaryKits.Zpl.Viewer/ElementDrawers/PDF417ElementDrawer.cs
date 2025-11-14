@@ -1,7 +1,9 @@
+using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
 using BinaryKits.Zpl.Viewer.Helpers;
 using SkiaSharp;
 using System.Collections.Generic;
+
 using ZXing;
 using ZXing.Common;
 using ZXing.PDF417;
@@ -21,18 +23,34 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         }
 
         ///<inheritdoc/>
-        public override void Draw(ZplElementBase element)
+        public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont)
         {
             if (element is ZplPDF417 pdf417)
             {
                 if (pdf417.Height == 0)
-                    return;
+                {
+                    return currentPosition;
+                }
 
-                if (string.IsNullOrWhiteSpace(pdf417.Content))
-                    return;
+                string content = pdf417.Content;
+                if (pdf417.HexadecimalIndicator is char hexIndicator)
+                {
+                    content = content.ReplaceHexEscapes(hexIndicator, internationalFont);
+                }
+
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    return currentPosition;
+                }
 
                 float x = pdf417.PositionX;
                 float y = pdf417.PositionY;
+
+                if (pdf417.UseDefaultPosition)
+                {
+                    x = currentPosition.X;
+                    y = currentPosition.Y;
+                }
 
                 int mincols, maxcols, minrows, maxrows;
                 if (pdf417.Rows != null)
@@ -61,12 +79,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         //When column count isn't defined, and rows count is,
                         // the col/row ratio is calculated using the algorithm in: ZXing.PDF417.Internal.PDF417.determineDimensions
                         // to allow a range for that algorithm, we divide the given row amount by 2.
-                        // as the algorithm goes from highest to lowest, this usually produces an acceptable result 
+                        // as the algorithm goes from highest to lowest, this usually produces an acceptable result
                         minrows /= 2;
                     }
                 }
-                var writer = new PDF417Writer();
-                var hints = new Dictionary<EncodeHintType, object> {
+
+                PDF417Writer writer = new();
+                Dictionary<EncodeHintType, object> hints = new() {
                     // { EncodeHintType.CHARACTER_SET, "ISO-8859-1" },
                     { EncodeHintType.PDF417_COMPACT, pdf417.Compact },
                     //{ EncodeHintType.PDF417_AUTO_ECI, true },
@@ -79,34 +98,34 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     { EncodeHintType.PDF417_DIMENSIONS, new Dimensions(mincols, maxcols, minrows, maxrows) },
                 };
 
-                var content = pdf417.Content;
-                if (pdf417.HexadecimalIndicator != default)
-                {
-                    content = content.ReplaceHexEscapes(pdf417.HexadecimalIndicator);
-                }
-                
-                var default_bitmatrix = writer.encode(content, BarcodeFormat.PDF_417, 0, 0, hints);
-                
-                //PDF417_ASPECT_RATIO set to 3, we need to multiply that with pdf417.ModuleWidth (defined by ^BY)
-                var bar_height = pdf417.ModuleWidth * 3;
-                var upscaled = proportional_upscale(default_bitmatrix, pdf417.ModuleWidth);
-                var result = vertical_scale(upscaled, pdf417.Height, bar_height);
+                BitMatrix default_bitmatrix = writer.encode(content, BarcodeFormat.PDF_417, 0, 0, hints);
 
-                using var resizedImage = this.BitMatrixToSKBitmap(result, 1);
+                //PDF417_ASPECT_RATIO set to 3, we need to multiply that with pdf417.ModuleWidth (defined by ^BY)
+                int bar_height = pdf417.ModuleWidth * 3;
+                BitMatrix upscaled = ProportionalUpscale(default_bitmatrix, pdf417.ModuleWidth);
+                BitMatrix result = VerticalScale(upscaled, pdf417.Height, bar_height);
+
+                using SKBitmap resizedImage = BitMatrixToSKBitmap(result, 1);
                 {
-                    var png = resizedImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
+                    byte[] png = resizedImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
                     this.DrawBarcode(png, x, y, resizedImage.Width, resizedImage.Height, pdf417.FieldOrigin != null, pdf417.FieldOrientation);
                 }
+
+                return this.CalculateNextDefaultPosition(x, y, resizedImage.Width, resizedImage.Height, pdf417.FieldOrigin != null, pdf417.FieldOrientation, currentPosition);
             }
+
+            return currentPosition;
         }
 
         // bitmatrix scaling instead of bitmap
-        private BitMatrix proportional_upscale(BitMatrix old, int scale) {
+        private static BitMatrix ProportionalUpscale(BitMatrix old, int scale)
+        {
             if (scale == 0 || scale == 1)
             {
                 return old;
             }
-            BitMatrix upscaled = new BitMatrix(old.Width * scale, old.Height * scale);
+
+            BitMatrix upscaled = new(old.Width * scale, old.Height * scale);
             for (int i = 0; i < old.Height; i++)
             {
                 BitArray old_row = old.getRow(i, null);
@@ -117,9 +136,11 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     {
                         continue;
                     }
+
                     upscaled.setRegion(j * scale, i * scale, scale, scale);
                 }
             }
+
             return upscaled;
         }
 
@@ -128,7 +149,8 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         //  - we can only set the height in zpl in points, not the width
         //  - each bar is ^BY "points" thick
         //  - because we have PDF417_ASPECT_RATIO set to 3, the height of a single bar is now 3 * ^BY
-        private BitMatrix vertical_scale(BitMatrix old_matrix, int new_bar_height, int old_bar_height) {
+        private static BitMatrix VerticalScale(BitMatrix old_matrix, int new_bar_height, int old_bar_height)
+        {
             int width = old_matrix.Width;
             int rows = old_matrix.Height / old_bar_height; // logical rows;
 
@@ -137,7 +159,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 return old_matrix;
             }
 
-            BitMatrix scaled = new BitMatrix(old_matrix.Width, rows * new_bar_height);
+            BitMatrix scaled = new(old_matrix.Width, rows * new_bar_height);
 
             for (int i = 0; i < rows; i++)
             {
@@ -149,13 +171,15 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     {
                         continue;
                     }
+
                     scaled.setRegion(j, i * new_bar_height, 1, new_bar_height);
                 }
             }
+
             return scaled;
         }
 
-        private PDF417ErrorCorrectionLevel ConvertErrorCorrection(int correction)
+        private static PDF417ErrorCorrectionLevel ConvertErrorCorrection(int correction)
         {
             return correction switch
             {

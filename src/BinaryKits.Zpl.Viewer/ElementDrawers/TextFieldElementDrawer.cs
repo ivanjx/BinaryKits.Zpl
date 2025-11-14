@@ -1,6 +1,7 @@
 using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
 using BinaryKits.Zpl.Viewer.Helpers;
+
 using SkiaSharp;
 using SkiaSharp.HarfBuzz;
 
@@ -14,6 +15,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             return element.GetType() == typeof(ZplTextField);
         }
 
+        ///<inheritdoc/>
         public override bool IsReverseDraw(ZplElementBase element)
         {
             if (element is ZplTextField textField)
@@ -25,35 +27,41 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         }
 
         ///<inheritdoc/>
-        public override void Draw(ZplElementBase element, DrawerOptions options)
+        public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont)
         {
             if (element is ZplTextField textField)
             {
                 float x = textField.PositionX;
                 float y = textField.PositionY;
-                FieldJustification fieldJustification;
+                FieldJustification fieldJustification = Label.FieldJustification.None;
 
-                var font = textField.Font;
+                if (textField.UseDefaultPosition)
+                {
+                    x = currentPosition.X;
+                    y = currentPosition.Y;
+                }
+
+                ZplFont font = textField.Font;
 
                 float fontSize = font.FontHeight > 0 ? font.FontHeight : font.FontWidth;
-                var scaleX = 1.00f;
+                float scaleX = 1.00f;
                 if (font.FontWidth != 0 && font.FontWidth != fontSize)
                 {
                     scaleX *= font.FontWidth / fontSize;
                 }
 
-                var typeface = options.FontLoader(font.FontName);
+                SKTypeface typeface = options.FontLoader(font.FontName);
 
-                var skFont = new SKFont(typeface, fontSize, scaleX);
-                using var skPaint = new SKPaint()
+                SKFont skFont = new(typeface, fontSize, scaleX);
+                using SKPaint skPaint = new()
                 {
                     IsAntialias = options.Antialias
                 };
 
                 string displayText = textField.Text;
-                if (textField.HexadecimalIndicator != default)
+                if (textField.HexadecimalIndicator is char hexIndicator)
                 {
-                    displayText = displayText.ReplaceHexEscapes(textField.HexadecimalIndicator);
+                    displayText = displayText.ReplaceHexEscapes(hexIndicator, internationalFont);
                 }
 
                 if (options.ReplaceDashWithEnDash)
@@ -61,10 +69,15 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     displayText = displayText.Replace("-", " \u2013 ");
                 }
 
-                skFont.MeasureText("X", out var textBoundBaseline);
-                skFont.MeasureText(displayText, out var textBounds);
+                if (options.ReplaceUnderscoreWithEnSpace)
+                {
+                    displayText = displayText.Replace('_', '\u2002');
+                }
 
-                using (new SKAutoCanvasRestore(this._skCanvas))
+                skFont.MeasureText("X", out SKRect textBoundBaseline);
+                float totalWidth = skFont.MeasureText(displayText, out SKRect textBounds);
+
+                using (new SKAutoCanvasRestore(this.skCanvas))
                 {
                     SKMatrix matrix = SKMatrix.Empty;
 
@@ -84,6 +97,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                             case FieldOrientation.Normal:
                                 break;
                         }
+
                         fieldJustification = textField.FieldOrigin.FieldJustification;
                     }
                     else
@@ -102,14 +116,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                             case FieldOrientation.Normal:
                                 break;
                         }
+
                         fieldJustification = textField.FieldTypeset.FieldJustification;
                     }
 
                     if (matrix != SKMatrix.Empty)
                     {
-                        var currentMatrix = _skCanvas.TotalMatrix;
-                        var concatMatrix = SKMatrix.Concat(currentMatrix, matrix);
-                        this._skCanvas.SetMatrix(in concatMatrix);
+                        this.skCanvas.Concat(matrix);
                     }
 
                     if (textField.FieldTypeset == null)
@@ -122,32 +135,34 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         skPaint.BlendMode = SKBlendMode.Xor;
                     }
 
-                    SKTextAlign align = default;
-
+                    SKTextAlign textAlign = SKTextAlign.Left;
                     if (fieldJustification == FieldJustification.Left)
                     {
-                        align = SKTextAlign.Left;
-                        
+                        textAlign = SKTextAlign.Left;
                     }
                     else if (fieldJustification == FieldJustification.Right)
                     {
-                        align = SKTextAlign.Right;
+                        textAlign = SKTextAlign.Right;
                     }
                     else if (fieldJustification == FieldJustification.Auto)
                     {
-                        var buffer = new HarfBuzzSharp.Buffer();
+                        HarfBuzzSharp.Buffer buffer = new();
                         buffer.AddUtf16(displayText);
                         buffer.GuessSegmentProperties();
                         if (buffer.Direction == HarfBuzzSharp.Direction.RightToLeft)
                         {
-                            align = SKTextAlign.Right;
+                            textAlign = SKTextAlign.Right;
                         }
                     }
 
-                    this._skCanvas.DrawShapedText(displayText, x, y, align, skFont, skPaint);
+                    this.skCanvas.DrawShapedText(displayText, x, y, textAlign, skFont, skPaint);
 
+                    // Update the next default field position after rendering
+                    return this.CalculateNextDefaultPosition(x, y, totalWidth, textBounds.Height, false, textField.Font.FieldOrientation, currentPosition);
                 }
             }
+
+            return currentPosition;
         }
     }
 }

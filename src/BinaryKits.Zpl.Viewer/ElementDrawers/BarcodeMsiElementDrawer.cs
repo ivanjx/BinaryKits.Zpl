@@ -1,5 +1,6 @@
 ﻿using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
+using BinaryKits.Zpl.Viewer.Helpers;
 using SkiaSharp;
 using System;
 using System.Linq;
@@ -14,21 +15,33 @@ public class BarcodeMsiElementDrawer : BarcodeDrawerBase
         return element is ZplBarcodeMsi;
     }
 
-    public override void Draw(ZplElementBase element, DrawerOptions options)
+    public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont)
     {
         if (element is not ZplBarcodeMsi msi)
         {
-            return;
-        }
-
-        if (string.IsNullOrEmpty(msi.Content))
-        {
-            return;
+            return currentPosition;
         }
 
         float x = msi.PositionX;
         float y = msi.PositionY;
+
+        if (msi.UseDefaultPosition)
+        {
+            x = currentPosition.X;
+            y = currentPosition.Y;
+        }
+
         string content = msi.Content;
+        if (msi.HexadecimalIndicator is char hexIndicator)
+        {
+            content = content.ReplaceHexEscapes(hexIndicator, internationalFont);
+        }
+
+        if (string.IsNullOrEmpty(content))
+        {
+            return currentPosition;
+        }
+
         string checkDigit = msi.CheckDigitMode switch
         {
             MsiBarcodeCheckDigitMode.None => NoCheck(content),
@@ -50,8 +63,8 @@ public class BarcodeMsiElementDrawer : BarcodeDrawerBase
         var result = writer.encode(content);
         int narrow = msi.ModuleWidth;
         int wide = (int)Math.Floor(msi.WideBarToNarrowBarWidthRatio * narrow);
-        result = this.AdjustWidths(result, wide, narrow);
-        using var resizedImage = this.BoolArrayToSKBitmap(result, msi.Height);
+        result = AdjustWidths(result, wide, narrow);
+        using var resizedImage = BoolArrayToSKBitmap(result, msi.Height);
         var png = resizedImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
         this.DrawBarcode(png, x, y, resizedImage.Width, resizedImage.Height, msi.FieldOrigin != null, msi.FieldOrientation);
 
@@ -62,6 +75,8 @@ public class BarcodeMsiElementDrawer : BarcodeDrawerBase
             var labelFont = new SKFont(labelTypeFace, labelFontSize);
             this.DrawInterpretationLine(interpretation, labelFont, x, y, resizedImage.Width, resizedImage.Height, msi.FieldOrigin != null, msi.FieldOrientation, msi.PrintInterpretationLineAboveCode, options);
         }
+
+        return this.CalculateNextDefaultPosition(x, y, resizedImage.Width, resizedImage.Height, msi.FieldOrigin != null, msi.FieldOrientation, currentPosition);
     }
 
     // A: No check digit

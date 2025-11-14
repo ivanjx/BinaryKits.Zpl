@@ -1,54 +1,71 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
-namespace BinaryKits.Zpl.Label.Elements;
-
-public class ZplBarcodeUpcA : ZplBarcode
+namespace BinaryKits.Zpl.Label.Elements
 {
-    public bool PrintCheckDigit { get; }
-    
-    public ZplBarcodeUpcA(
-        string content,
-        int positionX,
-        int positionY,
-        int height,
-        int moduleWidth,
-        double wideBarToNarrowBarWidthRatio,
-        FieldOrientation fieldOrientation,
-        bool printInterpretationLine,
-        bool printInterpretationLineAboveCode,
-        bool printCheckDigit,
-        bool bottomToTop = false) :
-        base(
-            content,
-            positionX,
-            positionY,
-            height,
-            moduleWidth,
-            wideBarToNarrowBarWidthRatio,
-            fieldOrientation,
-            printInterpretationLine,
-            printInterpretationLineAboveCode,
-            bottomToTop)
+    /// <summary>
+    /// UPC-A Barcode
+    /// </summary>
+    public class ZplBarcodeUpcA : ZplBarcode
     {
-        PrintCheckDigit = printCheckDigit;
-        
-        if (!IsDigitsOnly(content))
+        public bool PrintCheckDigit { get; private set; }
+
+        /// <summary>
+        /// UPC-A Barcode
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="positionX"></param>
+        /// <param name="positionY"></param>
+        /// <param name="height"></param>
+        /// <param name="moduleWidth"></param>
+        /// <param name="wideBarToNarrowBarWidthRatio"></param>
+        /// <param name="fieldOrientation"></param>
+        /// <param name="hexadecimalIndicator"></param>
+        /// <param name="printInterpretationLine"></param>
+        /// <param name="printInterpretationLineAboveCode"></param>
+        /// <param name="printCheckDigit"></param>
+        /// <param name="bottomToTop"></param>
+        /// <param name="useDefaultPosition"></param>
+        public ZplBarcodeUpcA(
+            string content,
+            int positionX,
+            int positionY,
+            int height = 100,
+            int moduleWidth = 2,
+            double wideBarToNarrowBarWidthRatio = 3,
+            FieldOrientation fieldOrientation = FieldOrientation.Normal,
+            char? hexadecimalIndicator = null,
+            bool printInterpretationLine = true,
+            bool printInterpretationLineAboveCode = false,
+            bool printCheckDigit = true,
+            bool bottomToTop = false,
+            bool useDefaultPosition = false)
+            : base(content,
+                  positionX,
+                  positionY,
+                  height,
+                  moduleWidth,
+                  wideBarToNarrowBarWidthRatio,
+                  fieldOrientation,
+                  hexadecimalIndicator,
+                  printInterpretationLine,
+                  printInterpretationLineAboveCode,
+                  bottomToTop,
+                  useDefaultPosition)
         {
-            throw new ArgumentException("UPC-A Barcode allow only digits", nameof(content));
+            this.PrintCheckDigit = printCheckDigit;
+        }
+
+        ///<inheritdoc/>
+        public override IEnumerable<string> Render(ZplRenderOptions context)
+        {
+            List<string> result = new List<string>();
+            result.AddRange(RenderPosition(context));
+            result.Add(RenderModuleWidth());
+            result.Add($"^BU{RenderFieldOrientation()},{context.Scale(this.Height)},{RenderPrintInterpretationLine()},{RenderPrintInterpretationLineAboveCode()},{RenderBoolean(this.PrintCheckDigit)}");
+            result.Add(RenderFieldDataSection());
+
+            return result;
         }
     }
-    
-    public override IEnumerable<string> Render(ZplRenderOptions context)
-    {
-        var result = new List<string>();
-        result.AddRange(RenderPosition(context));
-        result.Add(RenderModuleWidth());
-        result.Add($"^BU{RenderFieldOrientation()},{context.Scale(Height)},{RenderPrintInterpretationLine()},{RenderPrintInterpretationLineAboveCode()},{this.RenderPrintCheckDigit()}");
-        result.Add($"^FD{Content}^FS");
-
-        return result;
-    }
-    
-    private string RenderPrintCheckDigit() => PrintCheckDigit ? "Y" : "N";
 }

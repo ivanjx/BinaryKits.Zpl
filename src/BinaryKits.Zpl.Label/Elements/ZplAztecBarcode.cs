@@ -1,9 +1,9 @@
-﻿using BinaryKits.Zpl.Label.Helpers;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Text;
 
 namespace BinaryKits.Zpl.Label.Elements
 {
-    public class ZplAztecBarcode : ZplPositionedElementBase, IFormatElement
+    public class ZplAztecBarcode : ZplFieldDataElementBase
     {
         public int MagnificationFactor { get; protected set; }
         public bool ExtendedChannel { get; protected set; }
@@ -11,9 +11,6 @@ namespace BinaryKits.Zpl.Label.Elements
         public bool MenuSymbol { get; protected set; }
         public int SymbolCount { get; protected set; }
         public string IdField { get; protected set; }
-        public string Content { get; protected set; }
-        public char HexadecimalIndicator { get; protected set; }
-        public FieldOrientation FieldOrientation { get; protected set; }
 
         /// <summary>
         /// Aztec Bar Code
@@ -30,6 +27,7 @@ namespace BinaryKits.Zpl.Label.Elements
         /// <param name="hexadecimalIndicator"></param>
         /// <param name="fieldOrientation"></param>
         /// <param name="bottomToTop"></param>
+        /// <param name="useDefaultPosition"></param>
         public ZplAztecBarcode(
             string content,
             int positionX,
@@ -40,22 +38,19 @@ namespace BinaryKits.Zpl.Label.Elements
             bool menuSymbol = false,
             int symbolCount = 1,
             string idField = null,
-            char hexadecimalIndicator = default,
             FieldOrientation fieldOrientation = FieldOrientation.Normal,
-            bool bottomToTop = false
-           )
-            : base(positionX, positionY, bottomToTop)
+            char? hexadecimalIndicator = null,
+            bool bottomToTop = false,
+            bool useDefaultPosition = false)
+            : base(content, positionX, positionY, fieldOrientation, hexadecimalIndicator, bottomToTop, useDefaultPosition)
         {
-            this.Content = content;
             this.MagnificationFactor = magnificationFactor;
             this.ExtendedChannel = extendedChannel;
             this.ErrorControl = errorControl;
             this.SymbolCount = symbolCount;
             this.IdField = idField;
-            this.HexadecimalIndicator = hexadecimalIndicator;
-            this.FieldOrientation = fieldOrientation;
         }
- 
+
         ///<inheritdoc/>
         public override IEnumerable<string> Render(ZplRenderOptions context)
         {
@@ -63,16 +58,9 @@ namespace BinaryKits.Zpl.Label.Elements
             result.AddRange(RenderPosition(context));
             result.Add($"^BO{RenderFieldOrientation(this.FieldOrientation)},{this.MagnificationFactor},{RenderBoolean(this.ExtendedChannel)}," +
                 $"{this.ErrorControl},{RenderBoolean(this.MenuSymbol)},{this.SymbolCount},{this.IdField}");
-            result.Add(
-                Content.RenderFieldDataSection(HexadecimalIndicator));
+            result.Add(RenderFieldDataSection());
 
             return result;
-        }
-
-        /// <inheritdoc />
-        public void SetTemplateContent(string content)
-        {
-            this.Content = content;
         }
     }
 }

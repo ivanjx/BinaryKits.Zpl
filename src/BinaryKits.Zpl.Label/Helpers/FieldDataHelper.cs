@@ -6,11 +6,11 @@ public static class FieldDataHelper
 {
     public static string RenderFieldDataSection(
         this string text,
-        char hexadecimalIndicator,
+        char? hexadecimalIndicator,
         bool reversePrint = false,
         NewLineConversionMethod newLineConversionMethod = default)
     {
-        var sb = new StringBuilder();
+        StringBuilder sb = new();
 
         if (hexadecimalIndicator == default)
         {
@@ -28,14 +28,15 @@ public static class FieldDataHelper
         {
             sb.Append("^FD");
 
-            foreach (var c in text)
+            foreach (char c in text)
             {
                 string s = c.SanitizeCharacter(
                     newLineConversionMethod,
                     hexadecimalIndicator);
 
                 if (s.Length > 1 &&
-                    s.StartsWith(hexadecimalIndicator))
+                    hexadecimalIndicator != null &&
+                    s.StartsWith(hexadecimalIndicator.Value))
                 {
                     requiresFh = true;
                 }
@@ -57,7 +58,7 @@ public static class FieldDataHelper
     public static string SanitizeCharacter(
         this char input,
         NewLineConversionMethod newLineConversion = NewLineConversionMethod.ToSpace,
-        char hexadecimalIndicator = default)
+        char? hexadecimalIndicator = null)
     {
         switch (input)
         {
@@ -83,9 +84,9 @@ public static class FieldDataHelper
         if (input > 127 ||
             input < 32)
         {
-            var bytes = Encoding.UTF8.GetBytes(new[] { input });
-            var hexBuilder = new StringBuilder();
-            foreach (var b in bytes)
+            byte[] bytes = Encoding.UTF8.GetBytes(new[] { input });
+            StringBuilder hexBuilder = new();
+            foreach (byte b in bytes)
             {
                 hexBuilder.Append(hexadecimalIndicator);
                 hexBuilder.Append(b.ToString("X2"));

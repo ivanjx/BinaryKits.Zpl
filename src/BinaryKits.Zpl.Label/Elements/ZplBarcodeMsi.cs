@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace BinaryKits.Zpl.Label.Elements;
 
@@ -18,10 +16,12 @@ public class ZplBarcodeMsi : ZplBarcode
         double wideBarToNarrowBarWidthRatio,
         FieldOrientation fieldOrientation,
         MsiBarcodeCheckDigitMode checkDigitMode,
+        char? hexadecimalIndicator,
         bool printInterpretationLine = true,
         bool printInterpretationLineAboveCode = false,
         bool printCheckDigit = false,
-        bool bottomToTop = false) :
+        bool bottomToTop = false,
+        bool useDefaultPosition = false) :
         base(
             content,
             positionX,
@@ -30,9 +30,11 @@ public class ZplBarcodeMsi : ZplBarcode
             moduleWidth,
             wideBarToNarrowBarWidthRatio,
             fieldOrientation,
+            hexadecimalIndicator,
             printInterpretationLine,
             printInterpretationLineAboveCode,
-            bottomToTop)
+            bottomToTop,
+            useDefaultPosition)
     {
         CheckDigitMode = checkDigitMode;
         PrintCheckDigit = printCheckDigit;
@@ -43,7 +45,7 @@ public class ZplBarcodeMsi : ZplBarcode
         List<string> result = [];
         result.AddRange(RenderPosition(context));
         result.Add(RenderModuleWidth());
-        result.Add($"^BM{RenderFieldOrientation()},{RenderPrintCheckDigitMode()},{context.Scale(Height)},{RenderPrintInterpretationLine()},{RenderPrintInterpretationLineAboveCode()},{RenderPrintCheckDigit()}");
+        result.Add($"^BM{RenderFieldOrientation()},{RenderPrintCheckDigitMode()},{context.Scale(Height)},{RenderPrintInterpretationLine()},{RenderPrintInterpretationLineAboveCode()},{RenderBoolean(PrintCheckDigit)}");
         result.Add($"^FD{Content}^FS");
         return result;
     }
@@ -57,10 +59,5 @@ public class ZplBarcodeMsi : ZplBarcode
             MsiBarcodeCheckDigitMode.Mod_1_11_1_10 => "D",
             _ => "B"
         };
-    }
-
-    private string RenderPrintCheckDigit()
-    {
-        return PrintCheckDigit ? "Y" : "N";
     }
 }

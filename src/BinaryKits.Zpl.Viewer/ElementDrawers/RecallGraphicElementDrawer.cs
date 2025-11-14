@@ -1,4 +1,6 @@
+using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
+
 using SkiaSharp;
 
 namespace BinaryKits.Zpl.Viewer.ElementDrawers
@@ -15,37 +17,44 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         }
 
         ///<inheritdoc/>
-        public override void Draw(ZplElementBase element)
+        public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont)
         {
             if (element is ZplRecallGraphic recallGraphic)
             {
-                var imageData = this._printerStorage.GetFile(recallGraphic.StorageDevice, recallGraphic.ImageName);
+                byte[] imageData = this.printerStorage.GetFile(recallGraphic.StorageDevice, recallGraphic.ImageName);
 
                 if (imageData.Length == 0)
                 {
-                    return;
+                    return currentPosition;
                 }
 
-                var x = recallGraphic.PositionX;
-                var y = recallGraphic.PositionY;
-                var bitmap = SKBitmap.Decode(imageData);
+                float x = recallGraphic.PositionX;
+                float y = recallGraphic.PositionY;
 
-                if (bitmap == null)
+                if (recallGraphic.UseDefaultPosition)
                 {
-                    return;
+                    x = currentPosition.X;
+                    y = currentPosition.Y;
                 }
 
-                int width = bitmap.Width * recallGraphic.MagnificationFactorX;
-                int height = bitmap.Height * recallGraphic.MagnificationFactorY;
-
+                SKBitmap bitmap = SKBitmap.Decode(imageData);
                 if (recallGraphic.FieldTypeset != null)
                 {
-                    y -= height;
+                    y -= bitmap.Height;
+                    if (y < 0)
+                    {
+                        y = 0;
+                    }
                 }
 
-                var destRect = new SKRect(x, y, x + width, y + height);
-                this._skCanvas.DrawBitmap(bitmap, destRect);
+                this.skCanvas.DrawBitmap(bitmap, x, y);
+
+                float width = bitmap.Width;
+                float height = bitmap.Height;
+                return this.CalculateNextDefaultPosition(x, y, width, height, recallGraphic.FieldOrigin != null, FieldOrientation.Normal, currentPosition);
             }
+
+            return currentPosition;
         }
     }
 }

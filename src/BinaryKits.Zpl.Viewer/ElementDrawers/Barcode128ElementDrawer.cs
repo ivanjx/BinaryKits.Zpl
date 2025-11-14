@@ -1,6 +1,10 @@
+using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
+using BinaryKits.Zpl.Viewer.Helpers;
 using BinaryKits.Zpl.Viewer.Symologies;
+
 using SkiaSharp;
+
 using System;
 using System.Collections.Generic;
 
@@ -18,7 +22,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         }
 
         ///<inheritdoc/>
-        public override void Draw(ZplElementBase element, DrawerOptions options)
+        public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont)
         {
             if (element is ZplBarcode128 barcode)
             {
@@ -26,7 +30,12 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 if (string.IsNullOrEmpty(content))
                 {
-                    return;
+                    return currentPosition;
+                }
+
+                if (barcode.HexadecimalIndicator is char hexIndicator)
+                {
+                    content = content.ReplaceHexEscapes(hexIndicator, internationalFont);
                 }
 
                 Code128CodeSet codeSet = Code128CodeSet.Code128B;
@@ -53,37 +62,48 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     {
                         checksum += (content[i] - 48) * (i % 2 * 2 + 7);
                     }
+
                     content = $">8{content}{checksum % 10}";
                 }
 
                 float x = barcode.PositionX;
                 float y = barcode.PositionY;
 
-                List<bool> data;
+                bool[] data;
                 string interpretation;
-                
+
                 try
                 {
                     (data, interpretation) = ZplCode128Symbology.Encode(content, codeSet, gs1);
                 }
                 catch
                 {
-                    return;
+                    return currentPosition;
                 }
 
-                using var resizedImage = this.BoolArrayToSKBitmap(data.ToArray(), barcode.Height, barcode.ModuleWidth);
-                var png = resizedImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
+                if (barcode.UseDefaultPosition)
+                {
+                    x = currentPosition.X;
+                    y = currentPosition.Y;
+                }
+
+                using SKBitmap resizedImage = BoolArrayToSKBitmap(data, barcode.Height, barcode.ModuleWidth);
+                byte[] png = resizedImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
                 this.DrawBarcode(png, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation);
 
                 if (barcode.PrintInterpretationLine)
                 {
                     // TODO: use font 0, auto scale for Mode D
                     float labelFontSize = Math.Min(barcode.ModuleWidth * 10f, 100f);
-                    var labelTypeFace = options.FontLoader("A");
-                    var labelFont = new SKFont(labelTypeFace, labelFontSize);
+                    SKTypeface labelTypeFace = options.FontLoader("A");
+                    SKFont labelFont = new(labelTypeFace, labelFontSize);
                     this.DrawInterpretationLine(interpretation, labelFont, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, barcode.PrintInterpretationLineAboveCode, options);
                 }
+
+                return this.CalculateNextDefaultPosition(x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, currentPosition);
             }
+
+            return currentPosition;
         }
 
     }

@@ -13,7 +13,9 @@ public class ZplBarcodeLogmars : ZplBarcode
         double wideBarToNarrowBarWidthRatio,
         FieldOrientation fieldOrientation,
         bool printInterpretationLineAboveCode,
-        bool bottomToTop = false) :
+        char? hexadecimalIndicator = null,
+        bool bottomToTop = false,
+        bool useDefaultPosition = false) :
         base(
             content,
             positionX,
@@ -22,9 +24,11 @@ public class ZplBarcodeLogmars : ZplBarcode
             moduleWidth,
             wideBarToNarrowBarWidthRatio,
             fieldOrientation,
+            hexadecimalIndicator,
             true, // printInterpretationLine
             printInterpretationLineAboveCode,
-            bottomToTop)
+            bottomToTop,
+            useDefaultPosition)
     {
     }
 

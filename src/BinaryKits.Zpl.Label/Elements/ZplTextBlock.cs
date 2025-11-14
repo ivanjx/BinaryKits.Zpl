@@ -6,7 +6,7 @@ namespace BinaryKits.Zpl.Label.Elements
 {
     /// <summary>
     /// The ^TB command prints a text block with defined width and height.
-    /// The text block has an automatic word-wrap function. 
+    /// The text block has an automatic word-wrap function.
     /// If the text exceeds the block height, the text is truncated. Does not support \n
     /// </summary>
     public class ZplTextBlock : ZplTextField
@@ -23,7 +23,7 @@ namespace BinaryKits.Zpl.Label.Elements
             int height,
             ZplFont font,
             NewLineConversionMethod newLineConversion = NewLineConversionMethod.ToSpace,
-            char hexadecimalIndicator = default)
+            char? hexadecimalIndicator = null)
             : base(text, positionX, positionY, font, newLineConversion, hexadecimalIndicator)
         {
             Width = width;
@@ -38,7 +38,7 @@ namespace BinaryKits.Zpl.Label.Elements
         ///<inheritdoc/>
         public override IEnumerable<string> Render(ZplRenderOptions context)
         {
-            var result = new List<string>();
+            List<string> result = new List<string>();
             result.AddRange(Font.Render(context));
             result.AddRange(RenderPosition(context));
             result.Add($"^TB{RenderFieldOrientation(Font.FieldOrientation)},{context.Scale(Width)},{context.Scale(Height)}");
