@@ -24,7 +24,7 @@ namespace BinaryKits.Zpl.Label.Elements
             sb.Append("^FD");
             foreach (var c in Text)
             {
-                sb.Append(c.SanitizeCharacter());
+                sb.Append(ZplTextField.SanitizeCharacter(c));
             }
 
             var result = new List<string>();

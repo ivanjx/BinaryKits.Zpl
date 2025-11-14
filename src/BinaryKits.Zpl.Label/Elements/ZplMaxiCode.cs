@@ -50,8 +50,7 @@ namespace BinaryKits.Zpl.Label.Elements
             List<string> result = new List<string>();
             result.AddRange(RenderPosition(context));
             result.Add($"^BD{Mode},{Position},{Total}");
-            result.Add(
-                Content.RenderFieldDataSection(HexadecimalIndicator));
+            result.Add(RenderFieldDataSection());
 
             return result;
         }

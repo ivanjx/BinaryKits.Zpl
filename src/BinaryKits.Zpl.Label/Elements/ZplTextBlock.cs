@@ -42,11 +42,7 @@ namespace BinaryKits.Zpl.Label.Elements
             result.AddRange(Font.Render(context));
             result.AddRange(RenderPosition(context));
             result.Add($"^TB{RenderFieldOrientation(Font.FieldOrientation)},{context.Scale(Width)},{context.Scale(Height)}");
-            result.Add(
-                Text.RenderFieldDataSection(
-                    HexadecimalIndicator,
-                    ReversePrint,
-                    NewLineConversion));
+            result.Add(RenderFieldDataSection());
 
             return result;
         }

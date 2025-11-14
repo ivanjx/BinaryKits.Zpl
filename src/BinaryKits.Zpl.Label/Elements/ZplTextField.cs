@@ -59,11 +59,7 @@ namespace BinaryKits.Zpl.Label.Elements
             List<string> result = new List<string>();
             result.AddRange(Font.Render(context));
             result.AddRange(RenderPosition(context));
-            result.Add(
-                Text.RenderFieldDataSection(
-                    HexadecimalIndicator,
-                    ReversePrint,
-                    NewLineConversion));
+            result.Add(RenderFieldDataSection());
 
             return result;
         }
