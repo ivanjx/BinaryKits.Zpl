@@ -201,7 +201,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             if (antialias)
             {
                 // labelary
-                return image.Resize(new SKSizeI(25 * dpmm, (int)Math.Ceiling(24.125 * dpmm)), SKFilterQuality.High);
+                return image.Resize(
+                    new SKSizeI(25 * dpmm, (int)Math.Ceiling(24.125 * dpmm)),
+                    new SKSamplingOptions(SKCubicResampler.CatmullRom));
             }
             else
             {
