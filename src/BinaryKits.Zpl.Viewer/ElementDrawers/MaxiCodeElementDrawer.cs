@@ -43,7 +43,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 bool[] data = MaxiCodeSymbology.Encode(content, maxiCode.Mode);
 
-                using SKBitmap image = DrawMaxiCode(data, printDensityDpmm, options.Antialias);
+                using SKBitmap image = DrawMaxiCode(data, printDensityDpmm);
                 byte[] png = image.Encode(SKEncodedImageFormat.Png, 100).ToArray();
                 this.DrawBarcode(png, x, y, image.Width, image.Height, maxiCode.FieldOrigin != null, maxiCode.FieldOrientation);
                 return this.CalculateNextDefaultPosition(x, y, image.Width, image.Height, maxiCode.FieldOrigin != null, maxiCode.FieldOrientation, currentPosition);
@@ -52,8 +52,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             return currentPosition;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE1006:Naming Styles", Justification = "Match documentation.", Scope = "member")]
-        private static SKBitmap DrawMaxiCode(bool[] data, int dpmm, bool antialias)
+        private static SKBitmap DrawMaxiCode(bool[] data, int dpmm)
         {
             // ISO/IEC 16023:2000 pp. 16, 38-40
             // fundamental dimensions
@@ -66,7 +65,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             SKPoint[] pattern;
             float xoff, yoff;
 
-            if (dpmm == 8 && !antialias)
+            if (dpmm == 8)
             {
                 W = 7;
                 V = 8;
@@ -91,7 +90,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 L = 29 * W;
                 H = 32 * Y;
             }
-            else if (dpmm == 12 && !antialias)
+            else if (dpmm == 12)
             {
                 W = 10;
                 V = 12;
@@ -158,7 +157,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             using SKCanvas skCanvas = new(image);
             using SKPaint skPaint = new()
             {
-                IsAntialias = antialias,
                 Color = SKColors.Black,
                 Style = SKPaintStyle.Fill,
             };
@@ -198,19 +196,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
             skCanvas.DrawPath(path, skPaint);
 
-            if (antialias)
-            {
-                // labelary
-                return image.Resize(
-                    new SKSizeI(25 * dpmm, (int)Math.Ceiling(24.125 * dpmm)),
-                    new SKSamplingOptions(SKCubicResampler.CatmullRom));
-            }
-            else
-            {
-                // ISO
-                return image.Copy();
-            }
+            return image.Copy();
         }
-
     }
 }
