@@ -17,7 +17,7 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
 
             int tmpint;
             int model = 2;
-            int magnificationFactor = 3;
+            int magnificationFactor = 2;
             ErrorCorrectionLevel errorCorrection = ErrorCorrectionLevel.HighReliability;
             int maskValue = 7;
 
