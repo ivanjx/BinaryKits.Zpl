@@ -18,34 +18,34 @@ namespace BinaryKits.Zpl.Viewer
         /// <summary>
         /// The array of <see cref="IElementDrawer"/> to draw <see cref="ZplElementBase"/>
         /// </summary>
-        public static IElementDrawer[] ElementDrawers { get; } = [
-                new AztecBarcodeElementDrawer(),
-                new Barcode128ElementDrawer(),
-                new Barcode39ElementDrawer(),
-                new Barcode93ElementDrawer(),
-                new BarcodeEAN13ElementDrawer(),
-                new BarcodeUpcAElementDrawer(),
-                new BarcodeUpcEElementDrawer(),
-                new BarcodeUpcExtensionElementDrawer(),
-                new DataMatrixElementDrawer(),
-                new FieldBlockElementDrawer(),
-                new GraphicBoxElementDrawer(),
-                new GraphicCircleElementDrawer(),
-                new GraphicDiagonalLineElementDrawer(),
-                new GraphicEllipseElementDrawer(),
-                new GraphicFieldElementDrawer(),
-                new GraphicSymbolElementDrawer(),
-                new ImageMoveElementDrawer(),
-                new Interleaved2of5BarcodeDrawer(),
-                new MaxiCodeElementDrawer(),
-                new Pdf417ElementDrawer(),
-                new QrCodeElementDrawer(),
-                new RecallGraphicElementDrawer(),
-                new TextFieldElementDrawer(),
-                new BarcodeAnsiCodabarElementDrawer(),
-                new BarcodeMsiElementDrawer(),
-                new BarcodeLogmarsElementDrawer()
-            ];
+        private readonly IElementDrawer[] elementDrawers = [
+            new AztecBarcodeElementDrawer(),
+            new Barcode128ElementDrawer(),
+            new Barcode39ElementDrawer(),
+            new Barcode93ElementDrawer(),
+            new BarcodeEAN13ElementDrawer(),
+            new BarcodeUpcAElementDrawer(),
+            new BarcodeUpcEElementDrawer(),
+            new BarcodeUpcExtensionElementDrawer(),
+            new DataMatrixElementDrawer(),
+            new FieldBlockElementDrawer(),
+            new GraphicBoxElementDrawer(),
+            new GraphicCircleElementDrawer(),
+            new GraphicDiagonalLineElementDrawer(),
+            new GraphicEllipseElementDrawer(),
+            new GraphicFieldElementDrawer(),
+            new GraphicSymbolElementDrawer(),
+            new ImageMoveElementDrawer(),
+            new Interleaved2of5BarcodeDrawer(),
+            new MaxiCodeElementDrawer(),
+            new Pdf417ElementDrawer(),
+            new QrCodeElementDrawer(),
+            new RecallGraphicElementDrawer(),
+            new TextFieldElementDrawer(),
+            new BarcodeAnsiCodabarElementDrawer(),
+            new BarcodeMsiElementDrawer(),
+            new BarcodeLogmarsElementDrawer()
+        ];
 
         private static readonly int pdfDpi = 72;
         private static readonly float zplDpi = 203.2f;
@@ -104,7 +104,7 @@ namespace BinaryKits.Zpl.Viewer
                     continue;
                 }
 
-                IElementDrawer drawer = ElementDrawers.SingleOrDefault(o => o.CanDraw(element));
+                IElementDrawer drawer = this.elementDrawers.SingleOrDefault(o => o.CanDraw(element));
                 if (drawer == null)
                 {
                     continue;
@@ -213,7 +213,7 @@ namespace BinaryKits.Zpl.Viewer
                     continue;
                 }
 
-                IElementDrawer drawer = ElementDrawers.SingleOrDefault(o => o.CanDraw(element));
+                IElementDrawer drawer = this.elementDrawers.SingleOrDefault(o => o.CanDraw(element));
                 if (drawer == null)
                 {
                     continue;
