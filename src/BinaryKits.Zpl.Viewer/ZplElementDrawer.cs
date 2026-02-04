@@ -1,4 +1,4 @@
-using BinaryKits.Zpl.Label;
+﻿using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
 using BinaryKits.Zpl.Viewer.ElementDrawers;
 using Microsoft.Extensions.Logging;
@@ -15,20 +15,10 @@ namespace BinaryKits.Zpl.Viewer
 {
     public class ZplElementDrawer
     {
-        private readonly DrawerOptions _drawerOptions;
-        private readonly IPrinterStorage _printerStorage;
-        private readonly IElementDrawer[] _elementDrawers;
-
-        public ZplElementDrawer(IPrinterStorage printerStorage, DrawerOptions drawerOptions = null)
-        {
-            if (drawerOptions == null)
-            {
-                drawerOptions = new DrawerOptions();
-            }
-            this._drawerOptions = drawerOptions;
-            this._printerStorage = printerStorage;
-            this._elementDrawers =
-            [
+        /// <summary>
+        /// The array of <see cref="IElementDrawer"/> to draw <see cref="ZplElementBase"/>
+        /// </summary>
+        public static IElementDrawer[] ElementDrawers { get; } = [
                 new AztecBarcodeElementDrawer(),
                 new Barcode128ElementDrawer(),
                 new Barcode39ElementDrawer(),
@@ -41,7 +31,10 @@ namespace BinaryKits.Zpl.Viewer
                 new FieldBlockElementDrawer(),
                 new GraphicBoxElementDrawer(),
                 new GraphicCircleElementDrawer(),
+                new GraphicDiagonalLineElementDrawer(),
+                new GraphicEllipseElementDrawer(),
                 new GraphicFieldElementDrawer(),
+                new GraphicSymbolElementDrawer(),
                 new ImageMoveElementDrawer(),
                 new Interleaved2of5BarcodeDrawer(),
                 new MaxiCodeElementDrawer(),
@@ -53,6 +46,18 @@ namespace BinaryKits.Zpl.Viewer
                 new BarcodeMsiElementDrawer(),
                 new BarcodeLogmarsElementDrawer()
             ];
+
+        private static readonly int pdfDpi = 72;
+        private static readonly float zplDpi = 203.2f;
+        private static readonly float pdfScaleFactor = pdfDpi / zplDpi;
+
+        private readonly DrawerOptions drawerOptions;
+        private readonly IPrinterStorage printerStorage;
+
+        public ZplElementDrawer(IPrinterStorage printerStorage, DrawerOptions drawerOptions = null)
+        {
+            this.drawerOptions = drawerOptions ?? new DrawerOptions();
+            this.printerStorage = printerStorage;
         }
 
         /// <summary>
@@ -99,7 +104,7 @@ namespace BinaryKits.Zpl.Viewer
                     continue;
                 }
 
-                IElementDrawer drawer = _elementDrawers.SingleOrDefault(o => o.CanDraw(element));
+                IElementDrawer drawer = ElementDrawers.SingleOrDefault(o => o.CanDraw(element));
                 if (drawer == null)
                 {
                     continue;
@@ -115,8 +120,8 @@ namespace BinaryKits.Zpl.Viewer
                         using SKCanvas skCanvasInvert = new(skBitmapInvert);
                         skCanvasInvert.Clear(SKColors.Transparent);
 
-                        drawer.Prepare(_printerStorage, skCanvasInvert);
-                        currentDefaultPosition = drawer.Draw(element, _drawerOptions, currentDefaultPosition, internationalFont, printDensityDpmm);
+                        drawer.Prepare(printerStorage, skCanvasInvert);
+                        currentDefaultPosition = drawer.Draw(element, drawerOptions, currentDefaultPosition, internationalFont, printDensityDpmm);
 
                         //use color inversion on an reverse draw white element
                         if (drawer.IsWhiteDraw(element))
@@ -131,8 +136,8 @@ namespace BinaryKits.Zpl.Viewer
                         continue;
                     }
 
-                    drawer.Prepare(_printerStorage, skCanvas);
-                    currentDefaultPosition = drawer.Draw(element, _drawerOptions, currentDefaultPosition, internationalFont, printDensityDpmm);
+                    drawer.Prepare(printerStorage, skCanvas);
+                    currentDefaultPosition = drawer.Draw(element, drawerOptions, currentDefaultPosition, internationalFont, printDensityDpmm);
 
                     continue;
                 }
@@ -151,7 +156,7 @@ namespace BinaryKits.Zpl.Viewer
 
             //check if we need to set a white background
             SKImage image = surface.Snapshot();
-            if (_drawerOptions.OpaqueBackground == true)
+            if (drawerOptions.OpaqueBackground == true)
             {
                 using SKSurface surfaceWhiteBg = SKSurface.Create(info);
                 using SKCanvas skImageCanvasWhiteBg = surfaceWhiteBg.Canvas;
@@ -167,7 +172,7 @@ namespace BinaryKits.Zpl.Viewer
                 image = surfaceWhiteBg.Snapshot();
             }
 
-            SKData imageData = image.Encode(_drawerOptions.RenderFormat, _drawerOptions.RenderQuality);
+            SKData imageData = image.Encode(drawerOptions.RenderFormat, drawerOptions.RenderQuality);
             return imageData.ToArray();
         }
 
@@ -182,7 +187,7 @@ namespace BinaryKits.Zpl.Viewer
         /// <param name="logger"></param>
         /// <returns></returns>
         public void DrawSurface(SKSurface surface,
-            ZplElementBase[] elements,
+            IEnumerable<ZplElementBase> elements,
             double labelWidth = 101.6,
             double labelHeight = 152.4,
             int printDensityDpmm = 8,
@@ -208,7 +213,7 @@ namespace BinaryKits.Zpl.Viewer
                     continue;
                 }
 
-                IElementDrawer drawer = _elementDrawers.SingleOrDefault(o => o.CanDraw(element));
+                IElementDrawer drawer = ElementDrawers.SingleOrDefault(o => o.CanDraw(element));
                 if (drawer == null)
                 {
                     continue;
@@ -223,8 +228,8 @@ namespace BinaryKits.Zpl.Viewer
                         using SKCanvas skCanvasInvert = new(skBitmapInvert);
                         skCanvasInvert.Clear(SKColors.Transparent);
 
-                        drawer.Prepare(_printerStorage, skCanvasInvert);
-                        currentDefaultPosition = drawer.Draw(element, _drawerOptions, currentDefaultPosition, internationalFont, printDensityDpmm);
+                        drawer.Prepare(printerStorage, skCanvasInvert);
+                        currentDefaultPosition = drawer.Draw(element, drawerOptions, currentDefaultPosition, internationalFont, printDensityDpmm);
 
                         //use color inversion on an reverse draw white element
                         if (drawer.IsWhiteDraw(element))
@@ -239,8 +244,8 @@ namespace BinaryKits.Zpl.Viewer
                         continue;
                     }
 
-                    drawer.Prepare(_printerStorage, skCanvas);
-                    currentDefaultPosition = drawer.Draw(element, _drawerOptions, currentDefaultPosition, internationalFont, printDensityDpmm);
+                    drawer.Prepare(printerStorage, skCanvas);
+                    currentDefaultPosition = drawer.Draw(element, drawerOptions, currentDefaultPosition, internationalFont, printDensityDpmm);
 
                     continue;
                 }

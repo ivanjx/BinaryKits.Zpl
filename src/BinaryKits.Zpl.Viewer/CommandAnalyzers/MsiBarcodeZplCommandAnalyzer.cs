@@ -6,16 +6,16 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers;
 
 public class MsiBarcodeZplCommandAnalyzer : ZplCommandAnalyzerBase
 {
-    public MsiBarcodeZplCommandAnalyzer(VirtualPrinter virtualPrinter) : base("^BM", virtualPrinter)
+    public MsiBarcodeZplCommandAnalyzer() : base("^BM")
     {
     }
 
-    public override ZplElementBase Analyze(string zplCommand)
+    public override ZplElementBase Analyze(string zplCommand, VirtualPrinter virtualPrinter, IPrinterStorage printerStorage)
     {
-        var zplDataParts = this.SplitCommand(zplCommand);
+        string[] zplDataParts = this.SplitCommand(zplCommand);
 
         // ^BMN,B,100,Y,N,N
-        FieldOrientation fieldOrientation = this.ConvertFieldOrientation(zplDataParts[0]);
+        FieldOrientation fieldOrientation = this.ConvertFieldOrientation(zplDataParts[0], virtualPrinter);
         MsiBarcodeCheckDigitMode checkDigitSelection = default;
 
         if (zplDataParts.Length > 1)
@@ -23,7 +23,7 @@ public class MsiBarcodeZplCommandAnalyzer : ZplCommandAnalyzerBase
             checkDigitSelection = this.ConvertCheckDigitSelection(zplDataParts[1]);
         }
 
-        int height = this.VirtualPrinter.BarcodeInfo.Height;
+        int height = virtualPrinter.BarcodeInfo.Height;
 
         if (zplDataParts.Length > 2 && int.TryParse(zplDataParts[2], out int tmpint))
         {
@@ -51,7 +51,7 @@ public class MsiBarcodeZplCommandAnalyzer : ZplCommandAnalyzerBase
             printCheckDigit = this.ConvertBoolean(zplDataParts[5], "N");
         }
 
-        this.VirtualPrinter.SetNextElementFieldData(
+        virtualPrinter.SetNextElementFieldData(
             new CodeMsiBarcodeFieldData
             {
                 FieldOrientation = fieldOrientation,

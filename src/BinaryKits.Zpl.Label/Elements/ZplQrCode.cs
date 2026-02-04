@@ -1,4 +1,3 @@
-using BinaryKits.Zpl.Label.Helpers;
 using System.Collections.Generic;
 using System.Text;
 
@@ -10,6 +9,7 @@ namespace BinaryKits.Zpl.Label.Elements
         public int MagnificationFactor { get; private set; }
         public ErrorCorrectionLevel ErrorCorrectionLevel { get; private set; }
         public int MaskValue { get; private set; }
+        public int VerticalQuietZone { get; private set; }
 
         /// <summary>
         /// Zpl QrCode
@@ -25,6 +25,7 @@ namespace BinaryKits.Zpl.Label.Elements
         /// <param name="hexadecimalIndicator"></param>
         /// <param name="bottomToTop"></param>
         /// <param name="useDefaultPosition"></param>
+        /// <param name="verticalQuietZone">The vertical quiet zone (usually set with <c>^BY,,X</c>)</param>
         public ZplQrCode(
             string content,
             int positionX,
@@ -36,13 +37,15 @@ namespace BinaryKits.Zpl.Label.Elements
             FieldOrientation fieldOrientation = FieldOrientation.Normal,
             char? hexadecimalIndicator = null,
             bool bottomToTop = false,
-            bool useDefaultPosition = false)
+            bool useDefaultPosition = false,
+            int verticalQuietZone = 10)
             : base(content, positionX, positionY, fieldOrientation, hexadecimalIndicator, bottomToTop, useDefaultPosition)
         {
             Model = model;
             MagnificationFactor = magnificationFactor;
             ErrorCorrectionLevel = errorCorrectionLevel;
             MaskValue = maskValue;
+            VerticalQuietZone = verticalQuietZone;
         }
 
         ///<inheritdoc/>

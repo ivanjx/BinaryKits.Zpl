@@ -64,7 +64,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     gs1Mode = true;
                 }
 
-                int verticalQuietZone = 10;
+                int verticalQuietZone = qrcode.VerticalQuietZone;
 
                 QRCodeWriter writer = new();
                 QrCodeEncodingOptions encodingOptions = new()
@@ -98,6 +98,5 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 _ => ZXing.QrCode.Internal.ErrorCorrectionLevel.M
             };
         }
-
     }
 }

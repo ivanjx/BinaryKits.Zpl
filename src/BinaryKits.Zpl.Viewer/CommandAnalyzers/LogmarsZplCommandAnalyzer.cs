@@ -6,17 +6,17 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers;
 
 public class LogmarsZplCommandAnalyzer : ZplCommandAnalyzerBase
 {
-    public LogmarsZplCommandAnalyzer(VirtualPrinter virtualPrinter) : base("^BL", virtualPrinter)
+    public LogmarsZplCommandAnalyzer() : base("^BL")
     {
     }
 
-    public override ZplElementBase Analyze(string zplCommand)
+    public override ZplElementBase Analyze(string zplCommand, VirtualPrinter virtualPrinter, IPrinterStorage printerStorage)
     {
-        var zplDataParts = this.SplitCommand(zplCommand);
+        string[] zplDataParts = this.SplitCommand(zplCommand);
 
         // ^BLN,100,N
-        FieldOrientation fieldOrientation = this.ConvertFieldOrientation(zplDataParts[0]);
-        int height = this.VirtualPrinter.BarcodeInfo.Height;
+        FieldOrientation fieldOrientation = this.ConvertFieldOrientation(zplDataParts[0], virtualPrinter);
+        int height = virtualPrinter.BarcodeInfo.Height;
 
         if (zplDataParts.Length > 1 && int.TryParse(zplDataParts[1], out int tmpint))
         {
@@ -30,7 +30,7 @@ public class LogmarsZplCommandAnalyzer : ZplCommandAnalyzerBase
             printInterpretationLineAbove = this.ConvertBoolean(zplDataParts[2], "Y");
         }
 
-        this.VirtualPrinter.SetNextElementFieldData(
+        virtualPrinter.SetNextElementFieldData(
             new CodeLogmarsBarcodeFieldData
             {
                 FieldOrientation = fieldOrientation,

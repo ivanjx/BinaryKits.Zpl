@@ -5,10 +5,10 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
 {
     public class GraphicBoxZplCommandAnalyzer : ZplCommandAnalyzerBase
     {
-        public GraphicBoxZplCommandAnalyzer(VirtualPrinter virtualPrinter) : base("^GB", virtualPrinter) { }
+        public GraphicBoxZplCommandAnalyzer() : base("^GB") { }
 
         ///<inheritdoc/>
-        public override ZplElementBase Analyze(string zplCommand)
+        public override ZplElementBase Analyze(string zplCommand, VirtualPrinter virtualPrinter, IPrinterStorage printerStorage)
         {
             int tmpint;
             int width = 1;
@@ -22,16 +22,24 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
             bool bottomToTop = false;
             bool useDefaultPosition = false;
 
-            if (this.VirtualPrinter.NextElementPosition != null)
+            if (virtualPrinter.NextElementPosition != null)
             {
-                x = this.VirtualPrinter.NextElementPosition.X;
-                y = this.VirtualPrinter.NextElementPosition.Y;
+                x = virtualPrinter.NextElementPosition.X;
+                y = virtualPrinter.NextElementPosition.Y;
 
-                bottomToTop = this.VirtualPrinter.NextElementPosition.CalculateFromBottom;
-                useDefaultPosition = this.VirtualPrinter.NextElementPosition.UseDefaultPosition;
+                bottomToTop = virtualPrinter.NextElementPosition.CalculateFromBottom;
+                useDefaultPosition = virtualPrinter.NextElementPosition.UseDefaultPosition;
             }
 
             string[] zplDataParts = this.SplitCommand(zplCommand);
+
+            // thickness is the default for width and height, parse it first
+            if (zplDataParts.Length > 2 && int.TryParse(zplDataParts[2], out tmpint))
+            {
+                borderThickness = tmpint;
+                width = borderThickness;
+                height = borderThickness;
+            }
 
             if (zplDataParts.Length > 0 && int.TryParse(zplDataParts[0], out tmpint))
             {
@@ -41,11 +49,6 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
             if (zplDataParts.Length > 1 && int.TryParse(zplDataParts[1], out tmpint))
             {
                 height = tmpint;
-            }
-
-            if (zplDataParts.Length > 2 && int.TryParse(zplDataParts[2], out tmpint))
-            {
-                borderThickness = tmpint;
             }
 
             if (zplDataParts.Length > 3)
@@ -59,7 +62,7 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 cornerRounding = tmpint;
             }
 
-            bool reversePrint = this.VirtualPrinter.NextElementFieldReverse || this.VirtualPrinter.LabelReverse;
+            bool reversePrint = virtualPrinter.NextElementFieldReverse || virtualPrinter.LabelReverse;
 
             return new ZplGraphicBox(x, y, width, height, borderThickness, lineColor, cornerRounding, reversePrint, bottomToTop, useDefaultPosition);
         }

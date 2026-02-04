@@ -1,4 +1,4 @@
-using BinaryKits.Zpl.Label;
+﻿using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
 using BinaryKits.Zpl.Viewer.Helpers;
 
@@ -7,6 +7,9 @@ using SkiaSharp.HarfBuzz;
 
 namespace BinaryKits.Zpl.Viewer.ElementDrawers
 {
+    /// <summary>
+    /// Drawer for Text Field elements
+    /// </summary>
     public class TextFieldElementDrawer : ElementDrawerBase
     {
         ///<inheritdoc/>
@@ -27,13 +30,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         }
 
         ///<inheritdoc/>
-        public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont)
+        public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont, int printDensityDpmm)
         {
             if (element is ZplTextField textField)
             {
                 float x = textField.PositionX;
                 float y = textField.PositionY;
-                FieldJustification fieldJustification = Label.FieldJustification.None;
+                FieldJustification fieldJustification = FieldJustification.None;
 
                 if (textField.UseDefaultPosition)
                 {
@@ -43,14 +46,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 ZplFont font = textField.Font;
 
-                float fontSize = font.FontHeight > 0 ? font.FontHeight : font.FontWidth;
-                float scaleX = 1.00f;
-                if (font.FontWidth != 0 && font.FontWidth != fontSize)
-                {
-                    scaleX *= font.FontWidth / fontSize;
-                }
+                (float fontSize, float scaleX) = FontScale.GetFontScaling(font.FontName, font.FontHeight, font.FontWidth, printDensityDpmm);
 
-                SKTypeface typeface = options.FontLoader(font.FontName);
+                SKTypeface typeface = options.FontManager.FontLoader(font.FontName);
 
                 SKFont skFont = new(typeface, fontSize, scaleX);
                 using SKPaint skPaint = new()
@@ -64,14 +62,17 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     displayText = displayText.ReplaceHexEscapes(hexIndicator, internationalFont);
                 }
 
-                if (options.ReplaceDashWithEnDash)
+                if (font.FontName == "0")
                 {
-                    displayText = displayText.Replace("-", " \u2013 ");
-                }
+                    if (options.ReplaceDashWithEnDash)
+                    {
+                        displayText = displayText.Replace("-", " \u2013 ");
+                    }
 
-                if (options.ReplaceUnderscoreWithEnSpace)
-                {
-                    displayText = displayText.Replace('_', '\u2002');
+                    if (options.ReplaceUnderscoreWithEnSpace)
+                    {
+                        displayText = displayText.Replace('_', '\u2002');
+                    }
                 }
 
                 skFont.MeasureText("X", out SKRect textBoundBaseline);

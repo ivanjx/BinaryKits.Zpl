@@ -60,19 +60,19 @@ public class BarcodeMsiElementDrawer : BarcodeDrawerBase
         }
 
         MSIWriter writer = new();
-        var result = writer.encode(content);
+        bool[] result = writer.encode(content);
         int narrow = msi.ModuleWidth;
         int wide = (int)Math.Floor(msi.WideBarToNarrowBarWidthRatio * narrow);
         result = AdjustWidths(result, wide, narrow);
-        using var resizedImage = BoolArrayToSKBitmap(result, msi.Height);
-        var png = resizedImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
+        using SKBitmap resizedImage = BoolArrayToSKBitmap(result, msi.Height);
+        byte[] png = resizedImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
         this.DrawBarcode(png, x, y, resizedImage.Width, resizedImage.Height, msi.FieldOrigin != null, msi.FieldOrientation);
 
         if (msi.PrintInterpretationLine)
         {
             float labelFontSize = Math.Min(msi.ModuleWidth * 10f, 100f);
-            var labelTypeFace = options.FontLoader("A");
-            var labelFont = new SKFont(labelTypeFace, labelFontSize);
+            SKTypeface labelTypeFace = options.FontManager.FontLoader("A");
+            SKFont labelFont = new SKFont(labelTypeFace, labelFontSize);
             this.DrawInterpretationLine(interpretation, labelFont, x, y, resizedImage.Width, resizedImage.Height, msi.FieldOrigin != null, msi.FieldOrientation, msi.PrintInterpretationLineAboveCode, options);
         }
 
@@ -90,7 +90,7 @@ public class BarcodeMsiElementDrawer : BarcodeDrawerBase
         {
             return string.Empty;
         }
-        
+
         int sum = 0;
         bool doubleIt = true;
 
