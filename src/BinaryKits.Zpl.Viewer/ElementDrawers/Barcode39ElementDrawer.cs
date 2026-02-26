@@ -15,6 +15,8 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
     /// </summary>
     public class Barcode39ElementDrawer : BarcodeDrawerBase
     {
+        private const string Charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%";
+
         ///<inheritdoc/>
         public override bool CanDraw(ZplElementBase element)
         {
@@ -35,10 +37,30 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     y = currentPosition.Y;
                 }
 
-                string content = barcode.Content.Trim('*');
+                string content = barcode.Content.Trim('*').ToUpperInvariant();
                 if (barcode.HexadecimalIndicator is char hexIndicator)
                 {
                     content = content.ReplaceHexEscapes(hexIndicator, internationalFont);
+                }
+
+                if (barcode.Mod43CheckDigit)
+                {
+                    int checksum = 0;
+
+                    foreach (char c in content)
+                    {
+                        int index = Charset.IndexOf(c);
+
+                        if (index == -1)
+                        {
+                            return currentPosition;
+                        }
+
+                        checksum += index;
+                    }
+
+                    int remainder = checksum % 43;
+                    content += Charset[remainder];
                 }
 
                 string interpretation = string.Format("*{0}*", content);
