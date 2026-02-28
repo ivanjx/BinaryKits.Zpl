@@ -27,6 +27,7 @@ namespace BinaryKits.Zpl.Viewer
             new Code93BarcodeZplCommandAnalyzer(),
             new Code128BarcodeZplCommandAnalyzer(),
             new CodeEAN13BarcodeZplCommandAnalyzer(),
+            new CodeEAN8BarcodeZplCommandAnalyzer(),
             new CommentZplCommandAnalyzer(),
             new DataMatrixZplCommandAnalyzer(),
             new DownloadFormatCommandAnalyzer(),
