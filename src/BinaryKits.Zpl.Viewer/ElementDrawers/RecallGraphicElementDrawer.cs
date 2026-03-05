@@ -38,19 +38,20 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
 
                 SKBitmap bitmap = SKBitmap.Decode(imageData);
+                float width = bitmap.Width * recallGraphic.MagnificationFactorX;
+                float height = bitmap.Height * recallGraphic.MagnificationFactorY;
+
                 if (recallGraphic.FieldTypeset != null)
                 {
-                    y -= bitmap.Height;
+                    y -= height;
                     if (y < 0)
                     {
                         y = 0;
                     }
                 }
 
-                this.skCanvas.DrawBitmap(bitmap, x, y);
+                this.skCanvas.DrawBitmap(bitmap, new SKRect(x, y, x + width, y + height));
 
-                float width = bitmap.Width;
-                float height = bitmap.Height;
                 return this.CalculateNextDefaultPosition(x, y, width, height, recallGraphic.FieldOrigin != null, FieldOrientation.Normal, currentPosition);
             }
 
