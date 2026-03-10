@@ -24,6 +24,11 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         /// </summary>
         public bool OpaqueBackground { get; set; } = false;
 
+        /// <summary>
+        /// Gets or sets the solid background color used when <see cref="OpaqueBackground"/> is enabled.
+        /// </summary>
+        public SKColor BackgroundColor { get; set; } = SKColors.White;
+
         public bool ReplaceDashWithEnDash { get; set; } = true;
 
         /// <summary>

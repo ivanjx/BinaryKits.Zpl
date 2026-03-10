@@ -155,13 +155,13 @@ namespace BinaryKits.Zpl.Viewer
                 }
             }
 
-            //check if we need to set a white background
+            //check if we need to apply an opaque background color
             SKImage image = surface.Snapshot();
             if (drawerOptions.OpaqueBackground == true)
             {
                 using SKSurface surfaceWhiteBg = SKSurface.Create(info);
                 using SKCanvas skImageCanvasWhiteBg = surfaceWhiteBg.Canvas;
-                skImageCanvasWhiteBg.Clear(SKColors.White);
+                skImageCanvasWhiteBg.Clear(drawerOptions.BackgroundColor);
 
                 SKImage surfaceImage = surface.Snapshot();
                 SKPaint paint = new()
