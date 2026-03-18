@@ -79,7 +79,7 @@ namespace BinaryKits.Zpl.Viewer
             }
         }
 
-        internal SKTypeface TypefaceGS { get; } = SKTypeface.FromStream(new MemoryStream(Resources.ZplGS));
+        public SKTypeface TypefaceGS { get; } = SKTypeface.FromStream(new MemoryStream(Resources.ZplGS));
 
         public FontManager() {
             this.FontLoader = (fontName) => {
