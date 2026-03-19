@@ -141,8 +141,18 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         this.skCanvas.SetMatrix(concatMatrix);
                     }
 
+                    float clipTop = y - textBoundBaseline.Height;
+                    this.skCanvas.ClipRect(new SKRect(
+                        fieldBlock.PositionX,
+                        clipTop,
+                        fieldBlock.PositionX + fieldBlock.Width,
+                        clipTop + totalHeight));
+                    int lineIndex = 0;
+
                     foreach (string textLine in textLines)
                     {
+                        int visibleLineIndex = Math.Min(lineIndex, Math.Max(fieldBlock.MaxLineCount - 1, 0));
+                        float lineY = y + visibleLineIndex * lineHeight;
                         x = fieldBlock.PositionX + hangingIndent;
 
                         skFont.MeasureText(textLine, out SKRect textBounds);
@@ -169,8 +179,8 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                             skPaint.BlendMode = SKBlendMode.Xor;
                         }
 
-                        this.skCanvas.DrawShapedText(textLine, x, y, skFont, skPaint);
-                        y += lineHeight;
+                        this.skCanvas.DrawShapedText(textLine, x, lineY, skFont, skPaint);
+                        lineIndex++;
                     }
 
                     return this.CalculateNextDefaultPosition(fieldBlock.PositionX, fieldBlock.PositionY, fieldBlock.Width, totalHeight, fieldBlock.FieldOrigin != null, fieldBlock.Font.FieldOrientation, currentPosition);
