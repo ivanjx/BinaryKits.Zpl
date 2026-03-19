@@ -80,7 +80,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     y = currentPosition.Y + textBoundBaseline.Height;
                 }
 
-                IEnumerable<string> textLines = WordWrap(text, skFont, fieldBlock.Width);
+                List<WrappedTextLine> textLines = WordWrap(text, skFont, fieldBlock.Width);
                 int hangingIndent = 0;
                 float lineHeight = fontSize + fieldBlock.LineSpace;
 
@@ -149,8 +149,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         clipTop + totalHeight));
                     int lineIndex = 0;
 
-                    foreach (string textLine in textLines)
+                    foreach (WrappedTextLine wrappedLine in textLines)
                     {
+                        string textLine = wrappedLine.Text;
                         int visibleLineIndex = Math.Min(lineIndex, Math.Max(fieldBlock.MaxLineCount - 1, 0));
                         float lineY = y + visibleLineIndex * lineHeight;
                         x = fieldBlock.PositionX + hangingIndent;
@@ -179,7 +180,18 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                             skPaint.BlendMode = SKBlendMode.Xor;
                         }
 
-                        this.skCanvas.DrawShapedText(textLine, x, lineY, skFont, skPaint);
+                        if (fieldBlock.TextJustification == TextJustification.Justified &&
+                            wrappedLine.ShouldJustify)
+                        {
+                            float currentLineIndent = x - fieldBlock.PositionX;
+                            float availableWidth = Math.Max(fieldBlock.Width - currentLineIndent, 1);
+                            this.DrawJustifiedTextLine(textLine, x, lineY, availableWidth, skFont, skPaint);
+                        }
+                        else
+                        {
+                            this.skCanvas.DrawShapedText(textLine, x, lineY, skFont, skPaint);
+                        }
+
                         lineIndex++;
                     }
 
@@ -190,10 +202,55 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             return currentPosition;
         }
 
-        private static List<string> WordWrap(string text, SKFont font, int maxWidth)
+        private void DrawJustifiedTextLine(string textLine, float x, float y, float lineWidth, SKFont font, SKPaint paint)
+        {
+            string[] words = textLine.Split([' '], StringSplitOptions.None);
+
+            if (words.Length <= 1)
+            {
+                this.skCanvas.DrawShapedText(textLine, x, y, font, paint);
+                return;
+            }
+
+            float wordsWidth = 0;
+
+            foreach (string word in words)
+            {
+                wordsWidth += font.MeasureText(word);
+            }
+
+            int gapCount = words.Length - 1;
+            float gapWidth = (lineWidth - wordsWidth) / gapCount;
+
+            if (!float.IsFinite(gapWidth) || gapWidth <= 0)
+            {
+                this.skCanvas.DrawShapedText(textLine, x, y, font, paint);
+                return;
+            }
+
+            float currentX = x;
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                string word = words[i];
+
+                if (word.Length > 0)
+                {
+                    this.skCanvas.DrawShapedText(word, currentX, y, font, paint);
+                    currentX += font.MeasureText(word);
+                }
+
+                if (i < gapCount)
+                {
+                    currentX += gapWidth;
+                }
+            }
+        }
+
+        private static List<WrappedTextLine> WordWrap(string text, SKFont font, int maxWidth)
         {
             float spaceWidth = font.MeasureText(" ");
-            List<string> lines = [];
+            List<WrappedTextLine> lines = [];
 
             Stack<string> words = new(text.Split([' '], StringSplitOptions.None).AsEnumerable().Reverse());
             StringBuilder line = new();
@@ -210,7 +267,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     if (width + wordWidth <= maxWidth)
                     {
                         line.Append(word);
-                        lines.Add(line.ToString());
+                        lines.Add(new WrappedTextLine(line.ToString(), shouldJustify: false));
                         line = new StringBuilder();
                         width = 0;
                     }
@@ -218,9 +275,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     {
                         if (line.Length > 0)
                         {
-                            lines.Add(line.ToString().Trim());
+                            lines.Add(new WrappedTextLine(line.ToString().Trim(), shouldJustify: true));
                         }
-                        lines.Add(word);
+                        lines.Add(new WrappedTextLine(word, shouldJustify: false));
                         line = new StringBuilder();
                         width = 0;
                     }
@@ -237,7 +294,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     {
                         if (line.Length > 0)
                         {
-                            lines.Add(line.ToString().Trim());
+                            lines.Add(new WrappedTextLine(line.ToString().Trim(), shouldJustify: true));
                         }
 
                         line = new StringBuilder(word + " ");
@@ -246,8 +303,21 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
             }
 
-            lines.Add(line.ToString().Trim());
+            lines.Add(new WrappedTextLine(line.ToString().Trim(), shouldJustify: false));
             return lines;
+        }
+
+        private sealed class WrappedTextLine
+        {
+            public string Text { get; }
+
+            public bool ShouldJustify { get; }
+
+            public WrappedTextLine(string text, bool shouldJustify)
+            {
+                this.Text = text;
+                this.ShouldJustify = shouldJustify;
+            }
         }
 
     }
