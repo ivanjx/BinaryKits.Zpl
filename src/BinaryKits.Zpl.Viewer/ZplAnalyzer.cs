@@ -159,7 +159,8 @@ namespace BinaryKits.Zpl.Viewer
             for (int i = 0; i < cleanZpl.Length; i++)
             {
                 char c = cleanZpl[i];
-                if (c == caret || c == tilde)
+                bool isDataMatrixEscapeCharacter = c == tilde && IsDataMatrixCommandBuffer(buffer, caret);
+                if ((c == caret || c == tilde) && !isDataMatrixEscapeCharacter)
                 {
                     string command = buffer.ToString();
                     buffer.Clear();
@@ -203,6 +204,14 @@ namespace BinaryKits.Zpl.Viewer
             }
 
             return results.ToArray();
+        }
+
+        private static bool IsDataMatrixCommandBuffer(StringBuilder buffer, char caret)
+        {
+            return buffer.Length >= 3
+                && (buffer[0] == '^' || buffer[0] == caret)
+                && char.ToUpperInvariant(buffer[1]) == 'B'
+                && char.ToUpperInvariant(buffer[2]) == 'X';
         }
 
         private static void PatchCommand(ref string command, char caret, char tilde)

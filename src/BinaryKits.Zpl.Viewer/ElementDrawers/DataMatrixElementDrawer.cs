@@ -63,10 +63,18 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 DataMatrixWriter writer = new();
                 DatamatrixEncodingOptions encodingOptions = new()
                 {
-                    SymbolShape = SymbolShapeHint.FORCE_SQUARE,
+                    SymbolShape = ResolveSymbolShape(dataMatrix),
                     CompactEncoding = gs1Mode,
                     GS1Format = gs1Mode
                 };
+
+                if (dataMatrix.Columns.HasValue && dataMatrix.Rows.HasValue)
+                {
+                    Dimension exactSize = new(dataMatrix.Columns.Value, dataMatrix.Rows.Value);
+                    encodingOptions.MinSize = exactSize;
+                    encodingOptions.MaxSize = exactSize;
+                }
+
                 BitMatrix result = writer.encode(content, BarcodeFormat.DATA_MATRIX, 0, 0, encodingOptions.Hints);
 
                 using SKBitmap resizedImage = BitMatrixToSKBitmap(result, dataMatrix.Height);
@@ -79,6 +87,17 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             return currentPosition;
+        }
+
+        private static SymbolShapeHint ResolveSymbolShape(ZplDataMatrix dataMatrix)
+        {
+            return dataMatrix.AspectRatio switch
+            {
+                1 => SymbolShapeHint.FORCE_SQUARE,
+                2 => SymbolShapeHint.FORCE_RECTANGLE,
+                _ when dataMatrix.Columns.HasValue && dataMatrix.Rows.HasValue && dataMatrix.Columns != dataMatrix.Rows => SymbolShapeHint.FORCE_RECTANGLE,
+                _ => SymbolShapeHint.FORCE_NONE
+            };
         }
     }
 }

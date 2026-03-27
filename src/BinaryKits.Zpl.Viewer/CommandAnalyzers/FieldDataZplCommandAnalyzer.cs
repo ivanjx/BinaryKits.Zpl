@@ -77,7 +77,7 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 }
                 else if (virtualPrinter.NextElementFieldData is DataMatrixFieldData dataMatrixFieldData)
                 {
-                    return new ZplDataMatrix(text, x, y, dataMatrixFieldData.Height, dataMatrixFieldData.QualityLevel, dataMatrixFieldData.FieldOrientation, hexadecimalIndicator, bottomToTop, useDefaultPosition);
+                    return new ZplDataMatrix(text, x, y, dataMatrixFieldData.Height, dataMatrixFieldData.QualityLevel, dataMatrixFieldData.FieldOrientation, hexadecimalIndicator, bottomToTop, useDefaultPosition, dataMatrixFieldData.Columns, dataMatrixFieldData.Rows, dataMatrixFieldData.Format, dataMatrixFieldData.EscapeSequence, dataMatrixFieldData.AspectRatio);
                 }
                 else if (virtualPrinter.NextElementFieldData is Interleaved2of5BarcodeFieldData interleaved2of5)
                 {
