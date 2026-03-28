@@ -20,6 +20,7 @@ namespace BinaryKits.Zpl.Viewer
         public static IZplCommandAnalyzer[] Analyzers { get; } = [
             new FieldDataZplCommandAnalyzer(),
             new AztecBarcodeZplCommandAnalyzer(),
+            new AztecBarcodeAltZplCommandAnalyzer(),
             new BarCodeFieldDefaultZplCommandAnalyzer(),
             new ChangeAlphanumericDefaultFontZplCommandAnalyzer(),
             new ChangeInternationalFontCommandAnalyzer(),
