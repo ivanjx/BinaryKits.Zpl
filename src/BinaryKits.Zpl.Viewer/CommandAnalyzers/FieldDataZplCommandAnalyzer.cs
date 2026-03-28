@@ -55,7 +55,11 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 int moduleWidth = virtualPrinter.BarcodeInfo.ModuleWidth;
                 double wideBarToNarrowBarWidthRatio = virtualPrinter.BarcodeInfo.WideBarToNarrowBarWidthRatio;
 
-                if (virtualPrinter.NextElementFieldData is Code39BarcodeFieldData code39)
+                if (virtualPrinter.NextElementFieldData is Code11BarcodeFieldData code11)
+                {
+                    return new ZplBarcode11(text, x, y, code11.Height, moduleWidth, wideBarToNarrowBarWidthRatio, code11.FieldOrientation, hexadecimalIndicator, code11.PrintInterpretationLine, code11.PrintInterpretationLineAboveCode, code11.CheckDigitCount, bottomToTop, useDefaultPosition);
+                }
+                else if (virtualPrinter.NextElementFieldData is Code39BarcodeFieldData code39)
                 {
                     return new ZplBarcode39(text, x, y, code39.Height, moduleWidth, wideBarToNarrowBarWidthRatio, code39.FieldOrientation, hexadecimalIndicator, code39.PrintInterpretationLine, code39.PrintInterpretationLineAboveCode, code39.Mod43CheckDigit, bottomToTop, useDefaultPosition);
                 }

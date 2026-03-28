@@ -3,6 +3,7 @@
 ## Supported Barcode Formats
 
 ### 1D Barcodes
+- [x] Code 11 (^B1)
 - [x] Code 39 (^B3)
 - [x] Code 93 (^BA)
 - [x] Code 128 (^BC)
@@ -25,7 +26,6 @@
 ### 1D Barcodes
 - [ ] MSI (^BM): Supported by ZXing.NET
 - [ ] Databar/RSS-14 (^BR): Not supported by ZXing.NET
-- [ ] Code 11 (^B1): Not supported by ZXing.NET, [simple to implement](https://web.archive.org/web/20070202060711/http://www.barcodeisland.com/code11.phtml)
 - [ ] POSTNET (^BB): Not supported by ZXing.NET
 - [ ] PLANET (^B8): Not supported by ZXing.NET
 - [ ] Composite (^BC): Not supported by ZXing.NET, simple to implement

@@ -108,5 +108,14 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 _ => MsiBarcodeCheckDigitMode.Mod1_10
             };
         }
+
+        protected Code11CheckDigitCount ConvertCode11CheckDigitCount(string checkDigitCount)
+        {
+            return checkDigitCount switch
+            {
+                "Y" => Code11CheckDigitCount.One,
+                _ => Code11CheckDigitCount.Two
+            };
+        }
     }
 }

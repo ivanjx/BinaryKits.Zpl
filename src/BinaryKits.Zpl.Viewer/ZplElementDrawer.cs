@@ -20,6 +20,7 @@ namespace BinaryKits.Zpl.Viewer
         /// </summary>
         private readonly IElementDrawer[] elementDrawers = [
             new AztecBarcodeElementDrawer(),
+            new Barcode11ElementDrawer(),
             new Barcode128ElementDrawer(),
             new Barcode39ElementDrawer(),
             new Barcode93ElementDrawer(),
