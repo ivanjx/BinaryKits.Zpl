@@ -39,6 +39,7 @@ namespace BinaryKits.Zpl.Viewer
             new GraphicSymbolElementDrawer(),
             new ImageMoveElementDrawer(),
             new Interleaved2of5BarcodeDrawer(),
+            new Industrial2of5BarcodeDrawer(),
             new MaxiCodeElementDrawer(),
             new Pdf417ElementDrawer(),
             new QrCodeElementDrawer(),

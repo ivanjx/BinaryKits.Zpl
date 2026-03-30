@@ -52,6 +52,7 @@ namespace BinaryKits.Zpl.Viewer
             new GraphicFieldZplCommandAnalyzer(),
             new GraphicSymbolZplCommandAnalyzer(),
             new Interleaved2of5BarcodeZplCommandAnalyzer(),
+            new Industrial2of5BarcodeZplCommandAnalyzer(),
             new ImageMoveZplCommandAnalyzer(),
             new LabelHomeZplCommandAnalyzer(),
             new MaxiCodeBarcodeZplCommandAnalyzer(),
