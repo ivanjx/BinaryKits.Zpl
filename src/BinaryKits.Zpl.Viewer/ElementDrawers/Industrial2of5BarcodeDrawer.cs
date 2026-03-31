@@ -1,6 +1,7 @@
 using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
 using BinaryKits.Zpl.Viewer.Helpers;
+using BinaryKits.Zpl.Viewer.Symologies;
 
 using SkiaSharp;
 
@@ -14,20 +15,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
     /// </summary>
     public class Industrial2of5BarcodeDrawer : BarcodeDrawerBase
     {
-        private static readonly string[] digitPatterns =
-        [
-            "10101110111010",
-            "11101010101110",
-            "10111010101110",
-            "11101110101010",
-            "10101110101110",
-            "11101011101010",
-            "10111011101010",
-            "10101011101110",
-            "11101010111010",
-            "10111010111010"
-        ];
-
         ///<inheritdoc/>
         public override bool CanDraw(ZplElementBase element)
         {
@@ -64,7 +51,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     return currentPosition;
                 }
 
-                bool[] result = EncodeIndustrial2of5(content);
+                bool[] result = Industrial2of5Symbology.Encode(content);
                 int narrow = barcode.ModuleWidth;
                 int wide = Math.Max(narrow, (int)Math.Floor(barcode.WideBarToNarrowBarWidthRatio * narrow));
                 result = AdjustWidths(result, wide, narrow);
@@ -85,20 +72,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             return currentPosition;
-        }
-
-        private static bool[] EncodeIndustrial2of5(string content)
-        {
-            string encodedValue = "11011010";
-
-            for (int index = 0; index < content.Length; index++)
-            {
-                int digit = content[index] - '0';
-                encodedValue += digitPatterns[digit];
-            }
-
-            encodedValue += "11010110";
-            return encodedValue.Select(bit => bit == '1').ToArray();
         }
     }
 }
