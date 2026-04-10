@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace BinaryKits.Zpl.Viewer.Symologies
@@ -27,6 +28,7 @@ namespace BinaryKits.Zpl.Viewer.Symologies
         private static readonly Regex gs1StartCRegex = new(@"^(?:\d\d|>8){2}", RegexOptions.Compiled);
         private static readonly Regex gs1DigitPairRegex = new(@"^(?:\d\d|>8)", RegexOptions.Compiled);
         private static readonly Regex fnc1Regex = new(@"^>8", RegexOptions.Compiled);
+        private static readonly Regex explicitUccRegex = new(@"^(?:>;)?>8(?<digits>\d{19,20})$", RegexOptions.Compiled);
 
         private static readonly Regex startCodeRegex = new(@"^(>[9:;])(.+)$", RegexOptions.Compiled);
 
@@ -84,6 +86,38 @@ namespace BinaryKits.Zpl.Viewer.Symologies
         private static readonly Dictionary<string, int> codeCMap;
 
         private static readonly Dictionary<Code128CodeSet, (string[], Dictionary<string, int>)> codeMaps;
+
+        private readonly struct Gs1ApplicationIdentifierDefinition
+        {
+            public int FixedLength { get; }
+            public int MaxLength { get; }
+            public bool VariableLength { get; }
+            public bool NumericOnly { get; }
+
+            public Gs1ApplicationIdentifierDefinition(int fixedLength, int maxLength, bool variableLength, bool numericOnly)
+            {
+                this.FixedLength = fixedLength;
+                this.MaxLength = maxLength;
+                this.VariableLength = variableLength;
+                this.NumericOnly = numericOnly;
+            }
+        }
+
+        private readonly struct ParsedGs1Field
+        {
+            public string ApplicationIdentifier { get; }
+            public Gs1ApplicationIdentifierDefinition Definition { get; }
+            public string Data { get; }
+            public string RawData { get; }
+
+            public ParsedGs1Field(string applicationIdentifier, Gs1ApplicationIdentifierDefinition definition, string data, string rawData)
+            {
+                this.ApplicationIdentifier = applicationIdentifier;
+                this.Definition = definition;
+                this.Data = data;
+                this.RawData = rawData;
+            }
+        }
 
         /// <summary>
         /// <see href="https://en.wikipedia.org/wiki/Code_128#Bar_code_widths"/>
@@ -220,6 +254,17 @@ namespace BinaryKits.Zpl.Viewer.Symologies
 
         public static (bool[], string) Encode(string content, Code128CodeSet initialCodeSet, bool gs1)
         {
+            return EncodeInternal(content, initialCodeSet, gs1, null);
+        }
+
+        public static (bool[], string) Encode(string content, Code128CodeSet initialCodeSet, bool gs1, string mode, bool uccCheckDigit)
+        {
+            (string preparedContent, Code128CodeSet preparedCodeSet, bool preparedGs1, string interpretationOverride) = PrepareContent(content, initialCodeSet, gs1, mode, uccCheckDigit);
+            return EncodeInternal(preparedContent, preparedCodeSet, preparedGs1, interpretationOverride);
+        }
+
+        private static (bool[], string) EncodeInternal(string content, Code128CodeSet initialCodeSet, bool gs1, string interpretationOverride)
+        {
             List<bool> result = [];
             List<int> data;
             string interpretation;
@@ -237,7 +282,7 @@ namespace BinaryKits.Zpl.Viewer.Symologies
             }
 
             // TODO: magic constant FNC_1
-            if (gs1 && data[1] != 102)
+            if (gs1 && (data.Count == 1 || data[1] != 102))
             {
                 data.Insert(1, 102);
             }
@@ -252,7 +297,37 @@ namespace BinaryKits.Zpl.Viewer.Symologies
             // TODO: magic constant STOP
             result.AddRange(IntToBitArray(patterns[106]));
 
-            return (result.ToArray(), interpretation);
+            return (result.ToArray(), interpretationOverride ?? interpretation);
+        }
+
+        private static (string, Code128CodeSet, bool, string) PrepareContent(string content, Code128CodeSet initialCodeSet, bool gs1, string mode, bool uccCheckDigit)
+        {
+            string normalizedMode = string.IsNullOrWhiteSpace(mode) ? "N" : mode.Trim().ToUpperInvariant();
+            switch (normalizedMode)
+            {
+                case "D":
+                    {
+                        (string preparedContent, string interpretation) = PrepareApplicationIdentifierMode(content);
+                        return (preparedContent, Code128CodeSet.Code128, true, interpretation);
+                    }
+                case "U":
+                    {
+                        string preparedContent = NormalizeAi00Content(RemoveWhitespace(content));
+                        return (preparedContent, Code128CodeSet.Code128C, true, preparedContent);
+                    }
+                default:
+                    if (uccCheckDigit)
+                    {
+                        Match explicitUccMatch = explicitUccRegex.Match(content);
+                        if (explicitUccMatch.Success)
+                        {
+                            string preparedContent = NormalizeAi00Content(explicitUccMatch.Groups["digits"].Value);
+                            return (preparedContent, Code128CodeSet.Code128C, true, preparedContent);
+                        }
+                    }
+
+                    return (content, initialCodeSet, gs1, null);
+            }
         }
 
         private static int ComputeChecksum(int[] data)
@@ -299,11 +374,11 @@ namespace BinaryKits.Zpl.Viewer.Symologies
                 string symbol = content[i].ToString();
                 if (symbol == ">" && i + 1 < content.Length)
                 {
-                    i += 1;
-                    symbol += content[i];
+                    string invocation = symbol + content[i + 1];
                     int value;
-                    if (invocationMap.TryGetValue(symbol, out value))
+                    if (invocationMap.TryGetValue(invocation, out value))
                     {
+                        i += 1;
                         data.Add(value);
                         string code = codeChars[value];
                         if (code == CODE_A)
@@ -322,8 +397,9 @@ namespace BinaryKits.Zpl.Viewer.Symologies
                             (codeChars, codeMap) = codeMaps[codeSet];
                         }
                     }
-                    else if (startCodeMap.TryGetValue(symbol, out Code128CodeSet newCodeSet))
+                    else if (startCodeMap.TryGetValue(invocation, out Code128CodeSet newCodeSet))
                     {
+                        i += 1;
                         if (newCodeSet != codeSet)
                         {
                             value = codeMap[codeSetCodeMap[newCodeSet]];
@@ -334,35 +410,37 @@ namespace BinaryKits.Zpl.Viewer.Symologies
                     }
                     else
                     {
-                        throw new Exception($"Invalid invocation sequence in ZplCode128: {symbol}");
+                        continue;
                     }
                 }
                 else
                 {
-                    int value;
                     if (codeSet == Code128CodeSet.Code128C)
                     {
                         if (i + 1 < content.Length)
                         {
-                            i += 1;
-                            symbol += content[i];
+                            string pair = symbol + content[i + 1];
+                            if (codeMap.TryGetValue(pair, out int pairValue))
+                            {
+                                i += 1;
+                                data.Add(pairValue);
+                                interpretation += pair;
+                            }
+
+                            continue;
                         }
-                        else
-                        {
-                            value = codeMap[CODE_B];
-                            data.Add(value);
-                            codeSet = Code128CodeSet.Code128B;
-                            (codeChars, codeMap) = codeMaps[codeSet];
-                        }
+
+                        int switchValue = codeMap[CODE_B];
+                        data.Add(switchValue);
+                        codeSet = Code128CodeSet.Code128B;
+                        (codeChars, codeMap) = codeMaps[codeSet];
                     }
 
-                    if (!codeMap.TryGetValue(symbol, out value))
+                    if (codeMap.TryGetValue(symbol, out int value))
                     {
-                        throw new Exception($"Invalid symbol for {codeSet}: {symbol}");
+                        data.Add(value);
+                        interpretation += symbol;
                     }
-
-                    data.Add(value);
-                    interpretation += symbol;
                 }
             }
 
@@ -410,8 +488,11 @@ namespace BinaryKits.Zpl.Viewer.Symologies
                         content = content.Substring(1);
                     }
 
-                    data.Add(codeMap[symbol]);
-                    interpretation += symbol;
+                    if (codeMap.TryGetValue(symbol, out int value))
+                    {
+                        data.Add(value);
+                        interpretation += symbol;
+                    }
                 }
             }
 
@@ -464,13 +545,332 @@ namespace BinaryKits.Zpl.Viewer.Symologies
                         content = content.Substring(1);
                     }
 
-                    data.Add(codeMap[symbol]);
-                    interpretation += symbol;
+                    if (codeMap.TryGetValue(symbol, out int value))
+                    {
+                        data.Add(value);
+                        interpretation += symbol;
+                    }
                 }
             }
 
             return (data, interpretation);
         }
 
+        private static (string, string) PrepareApplicationIdentifierMode(string content)
+        {
+            if (TryParseApplicationIdentifierMode(content, out List<ParsedGs1Field> fields))
+            {
+                StringBuilder encodedContent = new();
+                StringBuilder interpretation = new();
+
+                for (int i = 0; i < fields.Count; i++)
+                {
+                    ParsedGs1Field field = fields[i];
+                    string data = field.Data;
+                    string rawData = field.RawData;
+                    if (field.ApplicationIdentifier == "00")
+                    {
+                        data = NormalizeAi00FieldData(field.Data);
+                        rawData = ApplyCheckDigitToRawData(field.RawData, data[data.Length - 1], field.Data.Length == 18);
+                    }
+
+                    encodedContent.Append(field.ApplicationIdentifier);
+                    encodedContent.Append(data);
+                    if (field.Definition.VariableLength && i + 1 < fields.Count)
+                    {
+                        encodedContent.Append(">8");
+                    }
+
+                    interpretation.Append('(');
+                    interpretation.Append(field.ApplicationIdentifier);
+                    interpretation.Append(')');
+                    interpretation.Append(rawData);
+                }
+
+                return (encodedContent.ToString(), interpretation.ToString());
+            }
+
+            string compactContent = RemoveWhitespace(content.Replace("(", string.Empty).Replace(")", string.Empty));
+            string normalizedContent = NormalizeAi00Content(compactContent);
+            string normalizedInterpretation = ApplyCheckDigitToRawData(content, normalizedContent[normalizedContent.Length - 1], compactContent.Length == 20);
+            return (normalizedContent, normalizedInterpretation);
+        }
+
+        private static bool TryParseApplicationIdentifierMode(string content, out List<ParsedGs1Field> fields)
+        {
+            fields = [];
+            int index = 0;
+
+            while (index < content.Length)
+            {
+                while (index < content.Length && char.IsWhiteSpace(content[index]))
+                {
+                    index += 1;
+                }
+
+                if (index >= content.Length)
+                {
+                    break;
+                }
+
+                if (content[index] != '(')
+                {
+                    fields.Clear();
+                    return false;
+                }
+
+                int closeIndex = content.IndexOf(')', index + 1);
+                if (closeIndex < 0)
+                {
+                    fields.Clear();
+                    return false;
+                }
+
+                string applicationIdentifier = content.Substring(index + 1, closeIndex - index - 1);
+                if (!TryGetApplicationIdentifierDefinition(applicationIdentifier, out Gs1ApplicationIdentifierDefinition definition))
+                {
+                    fields.Clear();
+                    return false;
+                }
+
+                index = closeIndex + 1;
+                int rawDataStart = index;
+                StringBuilder cleanData = new();
+
+                if (definition.VariableLength)
+                {
+                    while (index < content.Length && content[index] != '(')
+                    {
+                        if (IsAllowedAiCharacter(content[index], definition))
+                        {
+                            cleanData.Append(content[index]);
+                        }
+
+                        index += 1;
+                    }
+                }
+                else
+                {
+                    while (index < content.Length && cleanData.Length < definition.FixedLength)
+                    {
+                        if (content[index] == '(')
+                        {
+                            fields.Clear();
+                            return false;
+                        }
+
+                        if (IsAllowedAiCharacter(content[index], definition))
+                        {
+                            cleanData.Append(content[index]);
+                        }
+
+                        index += 1;
+                    }
+
+                    if (cleanData.Length != definition.FixedLength)
+                    {
+                        fields.Clear();
+                        return false;
+                    }
+
+                    while (index < content.Length && char.IsWhiteSpace(content[index]))
+                    {
+                        index += 1;
+                    }
+                }
+
+                string rawData = content.Substring(rawDataStart, index - rawDataStart);
+                string data = cleanData.ToString();
+                if (string.IsNullOrEmpty(data) || data.Length > definition.MaxLength)
+                {
+                    fields.Clear();
+                    return false;
+                }
+
+                if (definition.NumericOnly)
+                {
+                    if (!data.All(char.IsDigit))
+                    {
+                        fields.Clear();
+                        return false;
+                    }
+                }
+                else if (!data.All(char.IsLetterOrDigit))
+                {
+                    fields.Clear();
+                    return false;
+                }
+
+                fields.Add(new ParsedGs1Field(applicationIdentifier, definition, data, rawData));
+            }
+
+            return fields.Count > 0;
+        }
+
+        private static bool IsAllowedAiCharacter(char ch, Gs1ApplicationIdentifierDefinition definition)
+        {
+            if (char.IsWhiteSpace(ch))
+            {
+                return false;
+            }
+
+            if (definition.NumericOnly)
+            {
+                return char.IsDigit(ch);
+            }
+
+            return char.IsLetterOrDigit(ch);
+        }
+
+        private static bool TryGetApplicationIdentifierDefinition(string applicationIdentifier, out Gs1ApplicationIdentifierDefinition definition)
+        {
+            switch (applicationIdentifier)
+            {
+                case "00":
+                    definition = new Gs1ApplicationIdentifierDefinition(18, 18, false, true);
+                    return true;
+                case "01":
+                    definition = new Gs1ApplicationIdentifierDefinition(14, 14, false, true);
+                    return true;
+                case "10":
+                    definition = new Gs1ApplicationIdentifierDefinition(0, 20, true, false);
+                    return true;
+                case "11":
+                case "13":
+                case "15":
+                case "17":
+                    definition = new Gs1ApplicationIdentifierDefinition(6, 6, false, true);
+                    return true;
+                case "20":
+                    definition = new Gs1ApplicationIdentifierDefinition(2, 2, false, true);
+                    return true;
+                case "21":
+                    definition = new Gs1ApplicationIdentifierDefinition(0, 20, true, false);
+                    return true;
+                case "22":
+                    definition = new Gs1ApplicationIdentifierDefinition(0, 29, true, false);
+                    return true;
+                case "23":
+                    definition = new Gs1ApplicationIdentifierDefinition(0, 19, true, false);
+                    return true;
+                case "30":
+                    definition = new Gs1ApplicationIdentifierDefinition(0, 8, true, true);
+                    return true;
+                case "400":
+                    definition = new Gs1ApplicationIdentifierDefinition(0, 29, true, false);
+                    return true;
+                case "410":
+                case "411":
+                case "412":
+                    definition = new Gs1ApplicationIdentifierDefinition(13, 13, false, true);
+                    return true;
+                case "420":
+                    definition = new Gs1ApplicationIdentifierDefinition(0, 9, true, false);
+                    return true;
+                case "421":
+                    definition = new Gs1ApplicationIdentifierDefinition(0, 12, true, false);
+                    return true;
+                case "8001":
+                    definition = new Gs1ApplicationIdentifierDefinition(14, 14, false, true);
+                    return true;
+                case "8002":
+                    definition = new Gs1ApplicationIdentifierDefinition(0, 20, true, false);
+                    return true;
+            }
+
+            if (applicationIdentifier.Length == 4 && applicationIdentifier.StartsWith("31") && applicationIdentifier[2] >= '0' && applicationIdentifier[2] <= '6' && char.IsDigit(applicationIdentifier[3]))
+            {
+                definition = new Gs1ApplicationIdentifierDefinition(6, 6, false, true);
+                return true;
+            }
+
+            if (applicationIdentifier.Length == 4 && applicationIdentifier.StartsWith("320") && char.IsDigit(applicationIdentifier[3]))
+            {
+                definition = new Gs1ApplicationIdentifierDefinition(6, 6, false, true);
+                return true;
+            }
+
+            definition = default;
+            return false;
+        }
+
+        private static string NormalizeAi00Content(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                throw new Exception("AI 00 content must not be empty.");
+            }
+
+            if (!content.All(char.IsDigit))
+            {
+                throw new Exception($"AI 00 content must be numeric: {content}");
+            }
+
+            if ((content.Length != 19 && content.Length != 20) || !content.StartsWith("00"))
+            {
+                throw new Exception($"AI 00 content must include the AI and 17 or 18 digits: {content}");
+            }
+
+            string body = content.Length == 20 ? content.Substring(0, 19) : content;
+            return body + CalculateMod10CheckDigit(body);
+        }
+
+        private static string NormalizeAi00FieldData(string data)
+        {
+            if ((data.Length != 17 && data.Length != 18) || !data.All(char.IsDigit))
+            {
+                throw new Exception($"AI 00 field data must contain 17 or 18 digits: {data}");
+            }
+
+            string body = data.Length == 18 ? data.Substring(0, 17) : data;
+            return body + CalculateMod10CheckDigit($"00{body}");
+        }
+
+        private static char CalculateMod10CheckDigit(string data)
+        {
+            int checksum = 0;
+            int weight = 3;
+            for (int i = data.Length - 1; i >= 0; i--)
+            {
+                checksum += (data[i] - '0') * weight;
+                weight = weight == 3 ? 1 : 3;
+            }
+
+            return (char)('0' + ((10 - checksum % 10) % 10));
+        }
+
+        private static string ApplyCheckDigitToRawData(string rawData, char checkDigit, bool replaceExisting)
+        {
+            int trimmedLength = rawData.TrimEnd().Length;
+            string trimmedData = rawData.Substring(0, trimmedLength);
+            string trailingWhitespace = rawData.Substring(trimmedLength);
+
+            if (replaceExisting)
+            {
+                return ReplaceLastMeaningfulCharacter(trimmedData, checkDigit) + trailingWhitespace;
+            }
+
+            return trimmedData + checkDigit + trailingWhitespace;
+        }
+
+        private static string ReplaceLastMeaningfulCharacter(string content, char replacement)
+        {
+            char[] chars = content.ToCharArray();
+            for (int i = chars.Length - 1; i >= 0; i--)
+            {
+                if (!char.IsWhiteSpace(chars[i]))
+                {
+                    chars[i] = replacement;
+                    return new string(chars);
+                }
+            }
+
+            return content + replacement;
+        }
+
+        private static string RemoveWhitespace(string content)
+        {
+            return new string(content.Where(ch => !char.IsWhiteSpace(ch)).ToArray());
+        }
     }
 }

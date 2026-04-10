@@ -38,32 +38,21 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     content = content.ReplaceHexEscapes(hexIndicator, internationalFont);
                 }
 
+                string mode = string.IsNullOrWhiteSpace(barcode.Mode) ? "N" : barcode.Mode.ToUpperInvariant();
                 Code128CodeSet codeSet = Code128CodeSet.Code128B;
                 bool gs1 = false;
-                if (string.IsNullOrEmpty(barcode.Mode) || barcode.Mode == "N")
-                {
-                    codeSet = Code128CodeSet.Code128B;
-                }
-                else if (barcode.Mode == "A")
+                if (mode == "A")
                 {
                     codeSet = Code128CodeSet.Code128;
                 }
-                else if (barcode.Mode == "D")
+                else if (mode == "D")
                 {
                     codeSet = Code128CodeSet.Code128;
                     gs1 = true;
                 }
-                else if (barcode.Mode == "U")
+                else if (mode == "U")
                 {
                     codeSet = Code128CodeSet.Code128C;
-                    content = content.PadLeft(19, '0').Substring(0, 19);
-                    int checksum = 0;
-                    for (int i = 0; i < 19; i++)
-                    {
-                        checksum += (content[i] - 48) * (i % 2 * 2 + 7);
-                    }
-
-                    content = $">8{content}{checksum % 10}";
                 }
 
                 float x = barcode.PositionX;
@@ -74,7 +63,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 try
                 {
-                    (data, interpretation) = ZplCode128Symbology.Encode(content, codeSet, gs1);
+                    (data, interpretation) = ZplCode128Symbology.Encode(content, codeSet, gs1, mode, barcode.UccCheckDigit);
                 }
                 catch
                 {

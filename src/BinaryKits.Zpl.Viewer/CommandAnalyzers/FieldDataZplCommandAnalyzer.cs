@@ -69,7 +69,7 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 }
                 else if (virtualPrinter.NextElementFieldData is Code128BarcodeFieldData code128)
                 {
-                    return new ZplBarcode128(text, x, y, code128.Height, moduleWidth, wideBarToNarrowBarWidthRatio, code128.FieldOrientation, hexadecimalIndicator, code128.PrintInterpretationLine, code128.PrintInterpretationLineAboveCode, bottomToTop, useDefaultPosition, code128.Mode);
+                    return new ZplBarcode128(text, x, y, code128.Height, moduleWidth, wideBarToNarrowBarWidthRatio, code128.FieldOrientation, hexadecimalIndicator, code128.PrintInterpretationLine, code128.PrintInterpretationLineAboveCode, bottomToTop, useDefaultPosition, code128.Mode, code128.UccCheckDigit);
                 }
                 else if (virtualPrinter.NextElementFieldData is CodeEAN13BarcodeFieldData codeEAN13)
                 {

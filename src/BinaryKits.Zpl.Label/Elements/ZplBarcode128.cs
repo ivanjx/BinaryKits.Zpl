@@ -8,6 +8,7 @@ namespace BinaryKits.Zpl.Label.Elements
     public class ZplBarcode128 : ZplBarcode
     {
         public string Mode { get; set; }
+        public bool UccCheckDigit { get; set; }
 
         /// <summary>
         /// Code 128 Barcode
@@ -25,6 +26,7 @@ namespace BinaryKits.Zpl.Label.Elements
         /// <param name="bottomToTop"></param>
         /// <param name="useDefaultPosition"></param>
         /// <param name="mode"></param>
+        /// <param name="uccCheckDigit"></param>
         public ZplBarcode128(
             string content,
             int positionX,
@@ -38,7 +40,8 @@ namespace BinaryKits.Zpl.Label.Elements
             bool printInterpretationLineAboveCode = false,
             bool bottomToTop = false,
             bool useDefaultPosition = false,
-            string mode = "N")
+            string mode = "N",
+            bool uccCheckDigit = false)
             : base(content,
                   positionX,
                   positionY,
@@ -53,6 +56,7 @@ namespace BinaryKits.Zpl.Label.Elements
                   useDefaultPosition)
         {
             this.Mode = mode;
+            this.UccCheckDigit = uccCheckDigit;
         }
 
         ///<inheritdoc/>
