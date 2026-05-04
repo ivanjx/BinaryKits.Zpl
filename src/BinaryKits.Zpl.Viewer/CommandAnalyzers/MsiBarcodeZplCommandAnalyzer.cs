@@ -16,7 +16,7 @@ public class MsiBarcodeZplCommandAnalyzer : ZplCommandAnalyzerBase
 
         // ^BMN,B,100,Y,N,N
         FieldOrientation fieldOrientation = this.ConvertFieldOrientation(zplDataParts[0], virtualPrinter);
-        MsiBarcodeCheckDigitMode checkDigitSelection = default;
+        MsiBarcodeCheckDigitMode checkDigitSelection = MsiBarcodeCheckDigitMode.Mod1_10;
 
         if (zplDataParts.Length > 1)
         {
