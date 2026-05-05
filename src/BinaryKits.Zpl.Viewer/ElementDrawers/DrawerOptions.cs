@@ -1,3 +1,5 @@
+using BinaryKits.Zpl.Viewer.BitmapFonts;
+
 using SkiaSharp;
 
 using System;
@@ -40,6 +42,16 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         /// Gets or sets a value indicating whether antialiasing is enabled.
         /// </summary>
         public bool Antialias { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the text rendering path. Outline rendering is the default for compatibility.
+        /// </summary>
+        public ZplTextRenderingMode TextRenderingMode { get; set; } = ZplTextRenderingMode.Outline;
+
+        /// <summary>
+        /// Gets or sets the externally supplied bitmap font provider used by strict bitmap text rendering.
+        /// </summary>
+        public IZplBitmapFontProvider BitmapFontProvider { get; set; } = EmptyZplBitmapFontProvider.Instance;
 
         public FontManager FontManager { get; private set; }
 
