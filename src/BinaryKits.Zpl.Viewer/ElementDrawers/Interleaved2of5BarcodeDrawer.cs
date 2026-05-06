@@ -24,6 +24,12 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         ///<inheritdoc/>
         public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont)
         {
+            return this.Draw(element, options, currentPosition, internationalFont, 8);
+        }
+
+        ///<inheritdoc/>
+        public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont, int printDensityDpmm)
+        {
             if (element is ZplBarcodeInterleaved2of5 barcode)
             {
                 if (string.IsNullOrEmpty(barcode.Content))
@@ -82,10 +88,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 if (barcode.PrintInterpretationLine)
                 {
-                    float labelFontSize = Math.Min(barcode.ModuleWidth * 10f, 100f);
-                    SKTypeface labelTypeFace = options.FontManager.FontLoader("A");
-                    SKFont labelFont = new(labelTypeFace, labelFontSize);
-                    this.DrawInterpretationLine(content, labelFont, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, barcode.PrintInterpretationLineAboveCode, options);
+                    this.DrawBitmapInterpretationLine(content, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, barcode.PrintInterpretationLineAboveCode, options, internationalFont, printDensityDpmm, barcode.ModuleWidth);
                 }
 
                 return this.CalculateNextDefaultPosition(x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, currentPosition);

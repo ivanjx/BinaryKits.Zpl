@@ -1,5 +1,6 @@
 ﻿using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
+using BinaryKits.Zpl.Viewer.BitmapFonts;
 using BinaryKits.Zpl.Viewer.Helpers;
 
 using SkiaSharp;
@@ -70,16 +71,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 if (barcode.PrintInterpretationLine)
                 {
-                    float labelFontSize = FontScale.GetBitmappedFontSize("A", Math.Min(barcode.ModuleWidth, 10), printDensityDpmm).Value;
-                    SKTypeface labelTypeFace = options.FontManager.FontLoader("A");
-                    SKFont labelFont = new(labelTypeFace, labelFontSize);
                     if (barcode.PrintInterpretationLineAboveCode)
                     {
-                        this.DrawInterpretationLine(interpretation, labelFont, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, true, options);
+                        this.DrawBitmapInterpretationLine(interpretation, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, true, options, internationalFont, printDensityDpmm, barcode.ModuleWidth);
                     }
                     else
                     {
-                        this.DrawEAN13InterpretationLine(interpretation, labelFont, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, barcode.ModuleWidth, options);
+                        this.DrawEAN13InterpretationLine(interpretation, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, barcode.ModuleWidth, options, internationalFont, printDensityDpmm);
                     }
                 }
 
@@ -91,7 +89,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
         private void DrawEAN13InterpretationLine(
             string interpretation,
-            SKFont skFont,
             float x,
             float y,
             int barcodeWidth,
@@ -99,15 +96,12 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             bool useFieldOrigin,
             FieldOrientation fieldOrientation,
             int moduleWidth,
-            DrawerOptions options)
+            DrawerOptions options,
+            InternationalFont internationalFont,
+            int printDensityDpmm)
         {
             using (new SKAutoCanvasRestore(this.skCanvas))
             {
-                using SKPaint skPaint = new()
-                {
-                    IsAntialias = options.Antialias
-                };
-
                 SKMatrix matrix = GetRotationMatrix(x, y, barcodeWidth, barcodeHeight, useFieldOrigin, fieldOrientation);
 
                 if (matrix != SKMatrix.Empty)
@@ -116,8 +110,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     SKMatrix concatMatrix = SKMatrix.Concat(currentMatrix, matrix);
                     this.skCanvas.SetMatrix(concatMatrix);
                 }
-
-                skFont.MeasureText(interpretation, out SKRect textBounds);
 
                 if (!useFieldOrigin)
                 {
@@ -128,6 +120,40 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     }
                 }
 
+                if (this.TryGetBitmapInterpretationLineFont(options, internationalFont, printDensityDpmm, moduleWidth, out ZplBitmapFontData fontData, out ZplBitmapFontMetrics metrics))
+                {
+                    float bitmapMargin = MIN_LABEL_MARGIN;
+                    int bitmapSpacing = moduleWidth * 7;
+
+                    using SKBitmap bitmapGuardImage = BoolArrayToSKBitmap(guards, (int)(bitmapMargin + metrics.RenderedGlyphHeight / 2f), moduleWidth);
+                    byte[] bitmapGuardPng = bitmapGuardImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
+                    this.skCanvas.DrawBitmap(SKBitmap.Decode(bitmapGuardPng), x, y + barcodeHeight);
+
+                    using SKPaint paint = ZplBitmapFontRenderer.CreatePaint(false);
+                    for (int i = 0; i < interpretation.Length; i++)
+                    {
+                        string digit = interpretation[i].ToString();
+                        int digitWidth = ZplBitmapFontRenderer.MeasureTextWidth(digit, metrics);
+                        this.DrawBitmapDigit(digit, fontData, metrics, x - (bitmapSpacing + digitWidth) / 2f - moduleWidth, y + barcodeHeight + bitmapMargin, paint);
+                        x += bitmapSpacing;
+                        if (i == 0 || i == 6)
+                        {
+                            x += moduleWidth * 4;
+                        }
+                    }
+
+                    return;
+                }
+
+                float labelFontSize = FontScale.GetBitmappedFontSize("A", Math.Min(moduleWidth, 10), printDensityDpmm).Value;
+                SKTypeface labelTypeFace = options.FontManager.FontLoader("A");
+                using SKFont skFont = new(labelTypeFace, labelFontSize);
+                using SKPaint skPaint = new()
+                {
+                    IsAntialias = options.Antialias
+                };
+
+                skFont.MeasureText(interpretation, out SKRect textBounds);
                 float margin = Math.Max((skFont.Spacing - textBounds.Height) / 2, MIN_LABEL_MARGIN);
                 int spacing = moduleWidth * 7;
 

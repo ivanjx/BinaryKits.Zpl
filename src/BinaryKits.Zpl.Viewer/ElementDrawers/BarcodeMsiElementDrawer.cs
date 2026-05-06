@@ -17,6 +17,11 @@ public class BarcodeMsiElementDrawer : BarcodeDrawerBase
 
     public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont)
     {
+        return this.Draw(element, options, currentPosition, internationalFont, 8);
+    }
+
+    public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont, int printDensityDpmm)
+    {
         if (element is not ZplBarcodeMsi msi)
         {
             return currentPosition;
@@ -70,10 +75,7 @@ public class BarcodeMsiElementDrawer : BarcodeDrawerBase
 
         if (msi.PrintInterpretationLine)
         {
-            float labelFontSize = Math.Min(msi.ModuleWidth * 10f, 100f);
-            SKTypeface labelTypeFace = options.FontManager.FontLoader("A");
-            SKFont labelFont = new SKFont(labelTypeFace, labelFontSize);
-            this.DrawInterpretationLine(interpretation, labelFont, x, y, resizedImage.Width, resizedImage.Height, msi.FieldOrigin != null, msi.FieldOrientation, msi.PrintInterpretationLineAboveCode, options);
+            this.DrawBitmapInterpretationLine(interpretation, x, y, resizedImage.Width, resizedImage.Height, msi.FieldOrigin != null, msi.FieldOrientation, msi.PrintInterpretationLineAboveCode, options, internationalFont, printDensityDpmm, msi.ModuleWidth);
         }
 
         return this.CalculateNextDefaultPosition(x, y, resizedImage.Width, resizedImage.Height, msi.FieldOrigin != null, msi.FieldOrientation, currentPosition);

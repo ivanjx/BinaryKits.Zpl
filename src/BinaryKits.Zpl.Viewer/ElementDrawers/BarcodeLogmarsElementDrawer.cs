@@ -16,6 +16,11 @@ public class BarcodeLogmarsElementDrawer : BarcodeDrawerBase
 
     public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont)
     {
+        return this.Draw(element, options, currentPosition, internationalFont, 8);
+    }
+
+    public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont, int printDensityDpmm)
+    {
         if (element is not ZplBarcodeLogmars barcode)
         {
             return currentPosition;
@@ -63,10 +68,7 @@ public class BarcodeLogmarsElementDrawer : BarcodeDrawerBase
 
         if (barcode.PrintInterpretationLine)
         {
-            float labelFontSize = Math.Min(barcode.ModuleWidth * 10f, 100f);
-            SKTypeface labelTypeFace = options.FontManager.FontLoader("A");
-            SKFont labelFont = new(labelTypeFace, labelFontSize);
-            this.DrawInterpretationLine(interpretation, labelFont, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, barcode.PrintInterpretationLineAboveCode, options);
+            this.DrawBitmapInterpretationLine(interpretation, x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, barcode.PrintInterpretationLineAboveCode, options, internationalFont, printDensityDpmm, barcode.ModuleWidth);
         }
 
         return this.CalculateNextDefaultPosition(x, y, resizedImage.Width, resizedImage.Height, barcode.FieldOrigin != null, barcode.FieldOrientation, currentPosition);

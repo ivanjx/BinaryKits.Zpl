@@ -1,3 +1,6 @@
+using BinaryKits.Zpl.Label;
+using BinaryKits.Zpl.Viewer.BitmapFonts;
+
 using SkiaSharp;
 using SkiaSharp.HarfBuzz;
 
@@ -18,6 +21,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         /// Minimum acceptable magin between a barcode and its interpretation line, in pixels
         /// </summary>
         protected const float MIN_LABEL_MARGIN = 5f;
+        protected const string INTERPRETATION_LINE_FONT_NAME = "A";
 
         protected void DrawBarcode(byte[] barcodeImageData, float x, float y, int barcodeWidth, int barcodeHeight, bool useFieldOrigin, Label.FieldOrientation fieldOrientation)
         {
@@ -79,6 +83,94 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         .DrawShapedText(interpretation, x, y + barcodeHeight + textBounds.Height + margin, skFont, skPaint);
                 }
             }
+        }
+
+        protected void DrawBitmapInterpretationLine(
+            string interpretation,
+            float x,
+            float y,
+            int barcodeWidth,
+            int barcodeHeight,
+            bool useFieldOrigin,
+            Label.FieldOrientation fieldOrientation,
+            bool printInterpretationLineAboveCode,
+            DrawerOptions options,
+            InternationalFont internationalFont,
+            int printDensityDpmm,
+            int moduleWidth)
+        {
+            if (!TryGetBitmapInterpretationLineFont(options, internationalFont, printDensityDpmm, moduleWidth, out ZplBitmapFontData fontData, out ZplBitmapFontMetrics metrics))
+            {
+                float labelFontSize = Helpers.FontScale.GetBitmappedFontSize(INTERPRETATION_LINE_FONT_NAME, Math.Min(moduleWidth, 10), printDensityDpmm).Value;
+                SKTypeface labelTypeFace = options.FontManager.FontLoader(INTERPRETATION_LINE_FONT_NAME);
+                using SKFont labelFont = new(labelTypeFace, labelFontSize);
+                this.DrawInterpretationLine(interpretation, labelFont, x, y, barcodeWidth, barcodeHeight, useFieldOrigin, fieldOrientation, printInterpretationLineAboveCode, options);
+                return;
+            }
+
+            using (new SKAutoCanvasRestore(this.skCanvas))
+            {
+                SKMatrix matrix = GetRotationMatrix(x, y, barcodeWidth, barcodeHeight, useFieldOrigin, fieldOrientation);
+                if (matrix != SKMatrix.Empty)
+                {
+                    this.skCanvas.Concat(matrix);
+                }
+
+                int textWidth = ZplBitmapFontRenderer.MeasureTextWidth(interpretation, metrics);
+                float drawX = (float)Math.Round(x + (barcodeWidth - textWidth) / 2f);
+
+                if (!useFieldOrigin)
+                {
+                    y -= barcodeHeight;
+                    if (y < 0)
+                    {
+                        y = 0;
+                    }
+                }
+
+                float drawY = printInterpretationLineAboveCode ?
+                    y - MIN_LABEL_MARGIN - metrics.RenderedGlyphHeight :
+                    y + barcodeHeight + MIN_LABEL_MARGIN;
+
+                using SKPaint paint = ZplBitmapFontRenderer.CreatePaint(false);
+                ZplBitmapFontRenderer renderer = new(this.skCanvas);
+                renderer.DrawText(interpretation, fontData, metrics, drawX, drawY, paint);
+            }
+        }
+
+        protected bool TryGetBitmapInterpretationLineFont(
+            DrawerOptions options,
+            InternationalFont internationalFont,
+            int printDensityDpmm,
+            int moduleWidth,
+            out ZplBitmapFontData fontData,
+            out ZplBitmapFontMetrics metrics)
+        {
+            fontData = null;
+            metrics = null;
+
+            if (options.TextRenderingMode != ZplTextRenderingMode.BitmapStrict ||
+                options.BitmapFontProvider == null ||
+                !options.BitmapFontProvider.TryGet(INTERPRETATION_LINE_FONT_NAME, printDensityDpmm, internationalFont, out fontData))
+            {
+                return false;
+            }
+
+            int expansion = Math.Max(1, Math.Min(moduleWidth, 10));
+            metrics = fontData.Metrics.WithExpansion(expansion, expansion);
+            return true;
+        }
+
+        protected void DrawBitmapDigit(
+            string digit,
+            ZplBitmapFontData fontData,
+            ZplBitmapFontMetrics metrics,
+            float x,
+            float y,
+            SKPaint paint)
+        {
+            ZplBitmapFontRenderer renderer = new(this.skCanvas);
+            renderer.DrawText(digit, fontData, metrics, x, y, paint);
         }
 
         protected static SKMatrix GetRotationMatrix(float x, float y, int width, int height, bool useFieldOrigin, Label.FieldOrientation fieldOrientation)
