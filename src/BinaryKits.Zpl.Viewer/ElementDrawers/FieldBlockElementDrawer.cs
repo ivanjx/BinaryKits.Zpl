@@ -371,7 +371,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         {
             return fontName is 
                 "A" or "B" or "C" or "D" or 
-                "E" or "F" or "G" or "H";
+                "E" or "F" or "G" or "H" or "GS";
         }
 
         private void DrawJustifiedBitmapTextLine(

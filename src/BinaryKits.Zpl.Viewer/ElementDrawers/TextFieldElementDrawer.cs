@@ -202,7 +202,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             ZplFont font = textField.Font;
-            if (font.FontName is "0" or "GS")
+            if (font.FontName is "0")
             {
                 return false;
             }
