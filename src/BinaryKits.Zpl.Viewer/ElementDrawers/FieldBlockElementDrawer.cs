@@ -282,12 +282,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 int hangingIndent = 0;
                 int lineIndex = 0;
 
-                foreach (WrappedTextLine wrappedLine in textLines.Take(maxLineCount))
+                foreach (WrappedTextLine wrappedLine in textLines)
                 {
                     string textLine = wrappedLine.Text;
+                    int visibleLineIndex = Math.Min(lineIndex, maxLineCount - 1);
                     int lineWidth = ZplBitmapFontRenderer.MeasureTextWidth(textLine, metrics);
                     float lineX = x + hangingIndent;
-                    float lineY = topY + lineIndex * metrics.LineHeight;
+                    float lineY = topY + visibleLineIndex * metrics.LineHeight;
                     float diff = fieldBlock.Width - lineWidth;
 
                     switch (fieldBlock.TextJustification)
@@ -508,6 +509,24 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 else
                 {
                     float wordWidth = font.MeasureText(word);
+                    if (wordWidth > maxWidth)
+                    {
+                        if (line.Length > 0)
+                        {
+                            lines.Add(new WrappedTextLine(line.ToString().Trim(), shouldJustify: true));
+                            line = new StringBuilder();
+                            width = 0;
+                        }
+
+                        List<string> chunks = SplitLongWord(
+                            word,
+                            maxWidth,
+                            value => font.MeasureText(value));
+
+                        AddLongWordChunks(chunks, lines, line, ref width, spaceWidth, value => font.MeasureText(value));
+                        continue;
+                    }
+
                     if (width + wordWidth <= maxWidth)
                     {
                         line.Append(word + " ");
@@ -537,7 +556,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
             Stack<string> words = new(text.Split([' '], StringSplitOptions.None).AsEnumerable().Reverse());
             StringBuilder line = new();
-            int width = 0;
+            float width = 0;
             while (words.Count != 0)
             {
                 string word = words.Pop();
@@ -568,7 +587,32 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
                 else
                 {
-                    int wordWidth = ZplBitmapFontRenderer.MeasureTextWidth(word, metrics);
+                    int wordWidth = MeasureRenderedBitmapTextWidth(word, metrics);
+                    if (wordWidth > maxWidth)
+                    {
+                        if (line.Length > 0)
+                        {
+                            lines.Add(new WrappedTextLine(line.ToString().Trim(), shouldJustify: true));
+                            line = new StringBuilder();
+                            width = 0;
+                        }
+
+                        List<string> chunks = SplitLongWord(
+                            word,
+                            maxWidth,
+                            value => MeasureRenderedBitmapTextWidth(value, metrics));
+
+                        AddLongWordChunks(
+                            chunks,
+                            lines,
+                            line,
+                            ref width,
+                            spaceWidth,
+                            value => ZplBitmapFontRenderer.MeasureTextWidth(value, metrics));
+                        continue;
+                    }
+
+                    wordWidth = ZplBitmapFontRenderer.MeasureTextWidth(word, metrics);
                     if (width + wordWidth <= maxWidth)
                     {
                         line.Append(word + " ");
@@ -589,6 +633,123 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
             lines.Add(new WrappedTextLine(line.ToString().Trim(), shouldJustify: false));
             return lines;
+        }
+
+        private static List<string> SplitLongWord(
+            string word,
+            float maxWidth,
+            Func<string, float> measureText)
+        {
+            List<Rune> runes = [.. word.EnumerateRunes()];
+            List<string> chunks = [];
+            int start = 0;
+
+            while (start < runes.Count)
+            {
+                string remaining = CreateString(runes, start, runes.Count - start);
+
+                if (measureText(remaining) <= maxWidth)
+                {
+                    chunks.Add(remaining);
+                    break;
+                }
+
+                int runeCount = FindLongestPrefixThatFits(
+                    runes,
+                    start,
+                    maxWidth,
+                    measureText,
+                    appendHyphen: true);
+
+                if (runeCount <= 0)
+                {
+                    runeCount = Math.Max(
+                        1,
+                        FindLongestPrefixThatFits(
+                            runes,
+                            start,
+                            maxWidth,
+                            measureText,
+                            appendHyphen: false));
+                }
+
+                bool hasMoreText = start + runeCount < runes.Count;
+                chunks.Add(CreateString(runes, start, runeCount) + (hasMoreText ? "-" : ""));
+                start += runeCount;
+            }
+
+            return chunks;
+        }
+
+        private static int FindLongestPrefixThatFits(
+            IReadOnlyList<Rune> runes,
+            int start,
+            float maxWidth,
+            Func<string, float> measureText,
+            bool appendHyphen)
+        {
+            int best = 0;
+
+            for (int count = 1; start + count <= runes.Count; count++)
+            {
+                string text = CreateString(runes, start, count) + (appendHyphen ? "-" : "");
+
+                if (measureText(text) > maxWidth)
+                {
+                    break;
+                }
+
+                best = count;
+            }
+
+            return best;
+        }
+
+        private static void AddLongWordChunks(
+            List<string> chunks,
+            List<WrappedTextLine> lines,
+            StringBuilder line,
+            ref float width,
+            float spaceWidth,
+            Func<string, float> measureText)
+        {
+            for (int i = 0; i < chunks.Count; i++)
+            {
+                string chunk = chunks[i];
+                bool isLastChunk = i == chunks.Count - 1;
+
+                if (!isLastChunk)
+                {
+                    lines.Add(new WrappedTextLine(chunk, shouldJustify: false));
+                    continue;
+                }
+
+                line.Append(chunk + " ");
+                width = measureText(chunk) + spaceWidth;
+            }
+        }
+
+        private static string CreateString(IReadOnlyList<Rune> runes, int start, int count)
+        {
+            StringBuilder builder = new();
+
+            for (int i = start; i < start + count; i++)
+            {
+                builder.Append(runes[i]);
+            }
+
+            return builder.ToString();
+        }
+
+        private static int MeasureRenderedBitmapTextWidth(string text, ZplBitmapFontMetrics metrics)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return 0;
+            }
+
+            int runeCount = text.EnumerateRunes().Count();
+            return (runeCount - 1) * metrics.Advance + metrics.RenderedGlyphWidth;
         }
 
         private static ZplBitmapFontMetrics CreateExpandedMetrics(
