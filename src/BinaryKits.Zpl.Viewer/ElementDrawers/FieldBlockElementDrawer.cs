@@ -83,18 +83,19 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 skFont.MeasureText("X", out SKRect textBoundBaseline);
 
-                float x = fieldBlock.PositionX;
-                float y = fieldBlock.PositionY + textBoundBaseline.Height;
+                float positionX = fieldBlock.PositionX;
+                float positionY = fieldBlock.PositionY;
 
                 if (fieldBlock.UseDefaultPosition)
                 {
-                    x = currentPosition.X;
-                    y = currentPosition.Y + textBoundBaseline.Height;
+                    positionX = currentPosition.X;
+                    positionY = currentPosition.Y;
                 }
 
                 List<WrappedTextLine> textLines = WordWrap(text, skFont, fieldBlock.Width);
                 int hangingIndent = 0;
                 float lineHeight = fontSize + fieldBlock.LineSpace;
+                float y = positionY + textBoundBaseline.Height;
 
                 // actual ZPL printer does not include trailing line spacing in total height
                 float totalHeight = lineHeight * fieldBlock.MaxLineCount - fieldBlock.LineSpace;
@@ -116,13 +117,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         switch (fieldBlock.Font.FieldOrientation)
                         {
                             case FieldOrientation.Rotated90:
-                                matrix = SKMatrix.CreateRotationDegrees(90, fieldBlock.PositionX + totalHeight / 2, fieldBlock.PositionY + totalHeight / 2);
+                                matrix = SKMatrix.CreateRotationDegrees(90, positionX + totalHeight / 2, positionY + totalHeight / 2);
                                 break;
                             case FieldOrientation.Rotated180:
-                                matrix = SKMatrix.CreateRotationDegrees(180, fieldBlock.PositionX + fieldBlock.Width / 2, fieldBlock.PositionY + totalHeight / 2);
+                                matrix = SKMatrix.CreateRotationDegrees(180, positionX + fieldBlock.Width / 2, positionY + totalHeight / 2);
                                 break;
                             case FieldOrientation.Rotated270:
-                                matrix = SKMatrix.CreateRotationDegrees(270, fieldBlock.PositionX + fieldBlock.Width / 2, fieldBlock.PositionY + fieldBlock.Width / 2);
+                                matrix = SKMatrix.CreateRotationDegrees(270, positionX + fieldBlock.Width / 2, positionY + fieldBlock.Width / 2);
                                 break;
                             case FieldOrientation.Normal:
                                 break;
@@ -133,13 +134,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         switch (fieldBlock.Font.FieldOrientation)
                         {
                             case FieldOrientation.Rotated90:
-                                matrix = SKMatrix.CreateRotationDegrees(90, fieldBlock.PositionX, fieldBlock.PositionY);
+                                matrix = SKMatrix.CreateRotationDegrees(90, positionX, positionY);
                                 break;
                             case FieldOrientation.Rotated180:
-                                matrix = SKMatrix.CreateRotationDegrees(180, fieldBlock.PositionX, fieldBlock.PositionY);
+                                matrix = SKMatrix.CreateRotationDegrees(180, positionX, positionY);
                                 break;
                             case FieldOrientation.Rotated270:
-                                matrix = SKMatrix.CreateRotationDegrees(270, fieldBlock.PositionX, fieldBlock.PositionY);
+                                matrix = SKMatrix.CreateRotationDegrees(270, positionX, positionY);
                                 break;
                             case FieldOrientation.Normal:
                                 break;
@@ -155,9 +156,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                     float clipTop = y - textBoundBaseline.Height;
                     this.skCanvas.ClipRect(new SKRect(
-                        fieldBlock.PositionX,
+                        positionX,
                         clipTop,
-                        fieldBlock.PositionX + fieldBlock.Width,
+                        positionX + fieldBlock.Width,
                         clipTop + totalHeight));
                     int lineIndex = 0;
 
@@ -166,7 +167,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         string textLine = wrappedLine.Text;
                         int visibleLineIndex = Math.Min(lineIndex, Math.Max(fieldBlock.MaxLineCount - 1, 0));
                         float lineY = y + visibleLineIndex * lineHeight;
-                        x = fieldBlock.PositionX + hangingIndent;
+                        float x = positionX + hangingIndent;
 
                         skFont.MeasureText(textLine, out SKRect textBounds);
                         float diff = fieldBlock.Width - textBounds.Width;
@@ -195,7 +196,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         if (fieldBlock.TextJustification == TextJustification.Justified &&
                             wrappedLine.ShouldJustify)
                         {
-                            float currentLineIndent = x - fieldBlock.PositionX;
+                            float currentLineIndent = x - positionX;
                             float availableWidth = Math.Max(fieldBlock.Width - currentLineIndent, 1);
                             this.DrawJustifiedTextLine(textLine, x, lineY, availableWidth, skFont, skPaint);
                         }
@@ -207,7 +208,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         lineIndex++;
                     }
 
-                    return this.CalculateNextDefaultPosition(fieldBlock.PositionX, fieldBlock.PositionY, fieldBlock.Width, totalHeight, fieldBlock.FieldOrigin != null, fieldBlock.Font.FieldOrientation, currentPosition);
+                    return this.CalculateNextDefaultPosition(positionX, positionY, fieldBlock.Width, totalHeight, fieldBlock.FieldOrigin != null, fieldBlock.Font.FieldOrientation, currentPosition);
                 }
             }
 
