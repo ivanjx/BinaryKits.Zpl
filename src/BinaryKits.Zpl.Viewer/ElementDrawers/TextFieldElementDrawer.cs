@@ -71,7 +71,8 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 (float fontSize, float scaleX) = FontScale.GetFontScaling(font.FontName, font.FontHeight, font.FontWidth, printDensityDpmm);
 
-                SKTypeface typeface = options.FontManager.FontLoader(font.FontName);
+                string typefaceFontName = IsFont0Compatible(font.FontName) ? "0" : font.FontName;
+                SKTypeface typeface = options.FontManager.FontLoader(typefaceFontName);
 
                 SKFont skFont = new(typeface, fontSize, scaleX);
                 using SKPaint skPaint = new()
@@ -79,7 +80,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     IsAntialias = options.Antialias
                 };
 
-                if (font.FontName == "0")
+                if (IsFont0Compatible(font.FontName))
                 {
                     if (options.ReplaceDashWithEnDash)
                     {
@@ -202,7 +203,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             ZplFont font = textField.Font;
-            if (font.FontName is "0")
+            if (IsFont0Compatible(font.FontName))
             {
                 return false;
             }
@@ -311,6 +312,11 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         private static int GetExpansion(int requestedSize, int matrixSize)
         {
             return (int)Math.Max(1, Math.Round((double)requestedSize / matrixSize));
+        }
+
+        private static bool IsFont0Compatible(string fontName)
+        {
+            return fontName is "0" or "P" or "Q" or "R" or "S" or "T" or "U" or "V";
         }
 
         private static float GetBitmapAlignedX(

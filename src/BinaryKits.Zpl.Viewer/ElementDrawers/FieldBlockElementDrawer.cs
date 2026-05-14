@@ -61,8 +61,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
 
                 (float fontSize, float scaleX) = FontScale.GetFontScaling(font.FontName, font.FontHeight, font.FontWidth, printDensityDpmm);
-                SKTypeface typeface = options.FontManager.FontLoader(font.FontName);
-                if (font.FontName == "0")
+                string typefaceFontName = IsFont0Compatible(font.FontName) ? "0" : font.FontName;
+                SKTypeface typeface = options.FontManager.FontLoader(typefaceFontName);
+                if (IsFont0Compatible(font.FontName))
                 {
                     if (options.ReplaceDashWithEnDash)
                     {
@@ -373,6 +374,11 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             return fontName is 
                 "A" or "B" or "C" or "D" or 
                 "E" or "F" or "G" or "H" or "GS";
+        }
+
+        private static bool IsFont0Compatible(string fontName)
+        {
+            return fontName is "0" or "P" or "Q" or "R" or "S" or "T" or "U" or "V";
         }
 
         private void DrawJustifiedBitmapTextLine(

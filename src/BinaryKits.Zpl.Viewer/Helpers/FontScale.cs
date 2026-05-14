@@ -17,7 +17,14 @@ namespace BinaryKits.Zpl.Viewer.Helpers
             ["F"] = (26, 13),
             ["G"] = (60, 40),
             ["H"] = (17, 11),
-            ["GS"] = (24, 24)
+            ["GS"] = (24, 24),
+            ["P"] = (20, 18),
+            ["Q"] = (28, 24),
+            ["R"] = (35, 31),
+            ["S"] = (40, 35),
+            ["T"] = (48, 42),
+            ["U"] = (59, 53),
+            ["V"] = (80, 71)
         };
 
         private static readonly FontScaleDictionary fontScales8mm = new()
