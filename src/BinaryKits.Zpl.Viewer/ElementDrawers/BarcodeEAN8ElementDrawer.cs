@@ -127,7 +127,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                     using SKBitmap bitmapGuardImage = BoolArrayToSKBitmap(guards, (int)(bitmapMargin + metrics.RenderedGlyphHeight / 2f), moduleWidth);
                     byte[] bitmapGuardPng = bitmapGuardImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
-                    this.skCanvas.DrawBitmap(SKBitmap.Decode(bitmapGuardPng), x, y + barcodeHeight);
+                    this.skCanvas.DrawBitmap(SKBitmap.Decode(bitmapGuardPng), x, y + barcodeHeight, SKSamplingOptions.Default);
 
                     using SKPaint paint = ZplBitmapFontRenderer.CreatePaint(false);
                     float bitmapBaseX = x + moduleWidth * 3;
@@ -162,7 +162,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 using SKBitmap guardImage = BoolArrayToSKBitmap(guards, (int)(margin + textBounds.Height / 2), moduleWidth);
                 byte[] guardPng = guardImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
-                this.skCanvas.DrawBitmap(SKBitmap.Decode(guardPng), x, y + barcodeHeight);
+                this.skCanvas.DrawBitmap(SKBitmap.Decode(guardPng), x, y + barcodeHeight, SKSamplingOptions.Default);
 
                 float baseX = x + moduleWidth * 3;
                 for (int i = 0; i < interpretation.Length; i++)
@@ -170,7 +170,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     string digit = interpretation[i].ToString();
                     skFont.MeasureText(digit, out SKRect digitBounds);
                     float drawX = baseX + (spacing - digitBounds.Width) / 2;
-                    this.skCanvas.DrawText(digit, drawX, y + barcodeHeight + textBounds.Height + margin, skFont, skPaint);
+                    this.skCanvas.DrawText(
+                        digit,
+                        drawX,
+                        y + barcodeHeight + textBounds.Height + margin,
+                        SKTextAlign.Left,
+                        skFont,
+                        skPaint);
                     baseX += spacing;
 
                     if (i == 3)

@@ -203,7 +203,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         }
                         else
                         {
-                            this.skCanvas.DrawShapedText(textLine, x, lineY, skFont, skPaint);
+                            this.skCanvas.DrawShapedText(textLine, x, lineY, SKTextAlign.Left, skFont, skPaint);
                         }
 
                         lineIndex++;
@@ -439,7 +439,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
             if (words.Length <= 1)
             {
-                this.skCanvas.DrawShapedText(textLine, x, y, font, paint);
+                this.skCanvas.DrawShapedText(textLine, x, y, SKTextAlign.Left, font, paint);
                 return;
             }
 
@@ -455,7 +455,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
             if (!float.IsFinite(gapWidth) || gapWidth <= 0)
             {
-                this.skCanvas.DrawShapedText(textLine, x, y, font, paint);
+                this.skCanvas.DrawShapedText(textLine, x, y, SKTextAlign.Left, font, paint);
                 return;
             }
 
@@ -467,7 +467,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 if (word.Length > 0)
                 {
-                    this.skCanvas.DrawShapedText(word, currentX, y, font, paint);
+                    this.skCanvas.DrawShapedText(word, currentX, y, SKTextAlign.Left, font, paint);
                     currentX += font.MeasureText(word);
                 }
 

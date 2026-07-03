@@ -42,7 +42,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     this.skCanvas.Concat(matrix);
                 }
 
-                this.skCanvas.DrawBitmap(SKBitmap.Decode(barcodeImageData), x, y);
+                this.skCanvas.DrawBitmap(SKBitmap.Decode(barcodeImageData), x, y, SKSamplingOptions.Default);
             }
         }
 
@@ -75,12 +75,17 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 float margin = Math.Max((skFont.Spacing - textBounds.Height) / 2, MIN_LABEL_MARGIN);
                 if (printInterpretationLineAboveCode)
                 {
-                    this.skCanvas.DrawShapedText(interpretation, x, y - margin, skFont, skPaint);
+                    this.skCanvas.DrawShapedText(interpretation, x, y - margin, SKTextAlign.Left, skFont, skPaint);
                 }
                 else
                 {
-                    this.skCanvas
-                        .DrawShapedText(interpretation, x, y + barcodeHeight + textBounds.Height + margin, skFont, skPaint);
+                    this.skCanvas.DrawShapedText(
+                        interpretation,
+                        x,
+                        y + barcodeHeight + textBounds.Height + margin,
+                        SKTextAlign.Left,
+                        skFont,
+                        skPaint);
                 }
             }
         }

@@ -127,7 +127,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                     using SKBitmap bitmapGuardImage = BoolArrayToSKBitmap(guards, (int)(bitmapMargin + metrics.RenderedGlyphHeight / 2f), moduleWidth);
                     byte[] bitmapGuardPng = bitmapGuardImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
-                    this.skCanvas.DrawBitmap(SKBitmap.Decode(bitmapGuardPng), x, y + barcodeHeight);
+                    this.skCanvas.DrawBitmap(SKBitmap.Decode(bitmapGuardPng), x, y + barcodeHeight, SKSamplingOptions.Default);
 
                     using SKPaint paint = ZplBitmapFontRenderer.CreatePaint(false);
                     for (int i = 0; i < interpretation.Length; i++)
@@ -159,13 +159,19 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 using SKBitmap guardImage = BoolArrayToSKBitmap(guards, (int)(margin + textBounds.Height / 2), moduleWidth);
                 byte[] guardPng = guardImage.Encode(SKEncodedImageFormat.Png, 100).ToArray();
-                this.skCanvas.DrawBitmap(SKBitmap.Decode(guardPng), x, y + barcodeHeight);
+                this.skCanvas.DrawBitmap(SKBitmap.Decode(guardPng), x, y + barcodeHeight, SKSamplingOptions.Default);
 
                 for (int i = 0; i < interpretation.Length; i++)
                 {
                     string digit = interpretation[i].ToString();
                     skFont.MeasureText(digit, out SKRect digitBounds);
-                    this.skCanvas.DrawText(digit, x - (spacing + digitBounds.Width) / 2 - moduleWidth, y + barcodeHeight + textBounds.Height + margin, skFont, skPaint);
+                    this.skCanvas.DrawText(
+                        digit,
+                        x - (spacing + digitBounds.Width) / 2 - moduleWidth,
+                        y + barcodeHeight + textBounds.Height + margin,
+                        SKTextAlign.Left,
+                        skFont,
+                        skPaint);
                     x += spacing;
                     if (i == 0 || i == 6)
                     {

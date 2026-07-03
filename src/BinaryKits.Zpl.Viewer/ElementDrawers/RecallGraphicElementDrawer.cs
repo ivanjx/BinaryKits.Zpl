@@ -50,7 +50,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     }
                 }
 
-                this.skCanvas.DrawBitmap(bitmap, new SKRect(x, y, x + width, y + height));
+                this.skCanvas.DrawBitmap(bitmap, new SKRect(x, y, x + width, y + height), SKSamplingOptions.Default);
 
                 return this.CalculateNextDefaultPosition(x, y, width, height, recallGraphic.FieldOrigin != null, FieldOrientation.Normal, currentPosition);
             }

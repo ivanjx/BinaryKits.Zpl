@@ -80,26 +80,26 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     skPaint.BlendMode = SKBlendMode.Xor;
                 }
 
-                if(graphicLine.RightLeaningDiagonal)
+                using SKPathBuilder pathBuilder = new();
+                if (graphicLine.RightLeaningDiagonal)
                 {
-                    SKPath path = new();
-                    path.MoveTo(skPointLL);
-                    path.RLineTo(border, 0);
-                    path.RLineTo(width, -height);
-                    path.RLineTo(-border, 0);
-                    path.Close();
-                    this.skCanvas.DrawPath(path, skPaint);
+                    pathBuilder.MoveTo(skPointLL);
+                    pathBuilder.RLineTo(border, 0);
+                    pathBuilder.RLineTo(width, -height);
+                    pathBuilder.RLineTo(-border, 0);
+                    pathBuilder.Close();
                 }
                 else
                 {
-                    SKPath path = new();
-                    path.MoveTo(skPointUL);
-                    path.RLineTo(border, 0);
-                    path.RLineTo(width, height);
-                    path.RLineTo(-border, 0);
-                    path.Close();
-                    this.skCanvas.DrawPath(path, skPaint);
+                    pathBuilder.MoveTo(skPointUL);
+                    pathBuilder.RLineTo(border, 0);
+                    pathBuilder.RLineTo(width, height);
+                    pathBuilder.RLineTo(-border, 0);
+                    pathBuilder.Close();
                 }
+
+                using SKPath path = pathBuilder.Detach();
+                this.skCanvas.DrawPath(path, skPaint);
 
                 // Calculate next position based on box dimensions
                 return this.CalculateNextDefaultPosition(x, y, width, height, graphicLine.FieldOrigin != null, FieldOrientation.Normal, currentPosition);

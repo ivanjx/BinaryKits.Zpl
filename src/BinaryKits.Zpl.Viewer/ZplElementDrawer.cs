@@ -170,7 +170,7 @@ namespace BinaryKits.Zpl.Viewer
                 {
                     BlendMode = SKBlendMode.SrcOver
                 };
-                skImageCanvasWhiteBg.DrawImage(surfaceImage, 0f, 0f, paint);
+                skImageCanvasWhiteBg.DrawImage(surfaceImage, 0f, 0f, SKSamplingOptions.Default, paint);
 
                 image = surfaceWhiteBg.Snapshot();
             }
@@ -286,7 +286,7 @@ namespace BinaryKits.Zpl.Viewer
                 {
                     BlendMode = SKBlendMode.SrcOver
                 };
-                skImageCanvasPdfInvertColorFix.DrawImage(imageHistoryState, 0f, 0f, pdfPaint);
+                skImageCanvasPdfInvertColorFix.DrawImage(imageHistoryState, 0f, 0f, SKSamplingOptions.Default, pdfPaint);
             }
 
             //subtract the parts that are transparent in the final image
@@ -295,7 +295,7 @@ namespace BinaryKits.Zpl.Viewer
             {
                 BlendMode = SKBlendMode.DstOut
             };
-            skImageCanvasPdfInvertColorFix.DrawImage(finalSurfaceImage, 0f, 0f, pdfFinalPaint);
+            skImageCanvasPdfInvertColorFix.DrawImage(finalSurfaceImage, 0f, 0f, SKSamplingOptions.Default, pdfFinalPaint);
 
             //now invert the colors of the pixels that should be white place it on the canvas
             SKImage pdfTransparentPartsImage = surfacePdfInvertColorFix.Snapshot();
@@ -309,7 +309,7 @@ namespace BinaryKits.Zpl.Viewer
             ];
             pdfFinalPaintInverted.ColorFilter = SKColorFilter.CreateColorMatrix(inverter);
             pdfFinalPaintInverted.BlendMode = SKBlendMode.SrcOver;
-            skCanvas.DrawBitmap(pdfTransparentPartsBitmap, 0, 0, pdfFinalPaintInverted);
+            skCanvas.DrawBitmap(pdfTransparentPartsBitmap, 0, 0, SKSamplingOptions.Default, pdfFinalPaintInverted);
         }
 
         private static void InvertDraw(SKCanvas baseCanvas, SKBitmap bmToInvert)
@@ -317,7 +317,7 @@ namespace BinaryKits.Zpl.Viewer
             using (SKPaint paint = new())
             {
                 paint.BlendMode = SKBlendMode.Xor;
-                baseCanvas.DrawBitmap(bmToInvert, 0, 0, paint);
+                baseCanvas.DrawBitmap(bmToInvert, 0, 0, SKSamplingOptions.Default, paint);
             }
         }
 
@@ -333,7 +333,7 @@ namespace BinaryKits.Zpl.Viewer
                 ];
                 paint.ColorFilter = SKColorFilter.CreateColorMatrix(inverter);
                 paint.BlendMode = SKBlendMode.Xor;
-                baseCanvas.DrawBitmap(bmToInvert, 0, 0, paint);
+                baseCanvas.DrawBitmap(bmToInvert, 0, 0, SKSamplingOptions.Default, paint);
             }
         }
     }

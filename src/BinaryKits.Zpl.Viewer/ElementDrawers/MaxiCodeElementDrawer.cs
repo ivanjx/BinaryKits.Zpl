@@ -161,7 +161,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 Style = SKPaintStyle.Fill,
             };
 
-            SKPath path = new();
+            using SKPathBuilder pathBuilder = new();
             IEnumerator dataEnum = data.GetEnumerator();
             for (int j = 0; j < 33; j++)
             {
@@ -170,13 +170,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     dataEnum.MoveNext();
                     if ((bool)dataEnum.Current)
                     {
-                        path.MoveTo(i * W + j % 2 * xoff, j * Y + yoff);
+                        pathBuilder.MoveTo(i * W + j % 2 * xoff, j * Y + yoff);
                         foreach (SKPoint point in pattern)
                         {
-                            path.RLineTo(point);
+                            pathBuilder.RLineTo(point);
                         }
 
-                        path.Close();
+                        pathBuilder.Close();
                     }
                 }
             }
@@ -184,16 +184,17 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             float finderX = 14 * W + (X - gX) / 2;
             float finderY = 16 * Y + (V - gV) / 2;
 
-            path.AddCircle(finderX, finderY, R1, SKPathDirection.CounterClockwise);
-            path.AddCircle(finderX, finderY, R2, SKPathDirection.Clockwise);
-            path.Close();
-            path.AddCircle(finderX, finderY, R3, SKPathDirection.CounterClockwise);
-            path.AddCircle(finderX, finderY, R4, SKPathDirection.Clockwise);
-            path.Close();
-            path.AddCircle(finderX, finderY, R5, SKPathDirection.CounterClockwise);
-            path.AddCircle(finderX, finderY, R6, SKPathDirection.Clockwise);
-            path.Close();
+            pathBuilder.AddCircle(finderX, finderY, R1, SKPathDirection.CounterClockwise);
+            pathBuilder.AddCircle(finderX, finderY, R2, SKPathDirection.Clockwise);
+            pathBuilder.Close();
+            pathBuilder.AddCircle(finderX, finderY, R3, SKPathDirection.CounterClockwise);
+            pathBuilder.AddCircle(finderX, finderY, R4, SKPathDirection.Clockwise);
+            pathBuilder.Close();
+            pathBuilder.AddCircle(finderX, finderY, R5, SKPathDirection.CounterClockwise);
+            pathBuilder.AddCircle(finderX, finderY, R6, SKPathDirection.Clockwise);
+            pathBuilder.Close();
 
+            using SKPath path = pathBuilder.Detach();
             skCanvas.DrawPath(path, skPaint);
 
             return image.Copy();

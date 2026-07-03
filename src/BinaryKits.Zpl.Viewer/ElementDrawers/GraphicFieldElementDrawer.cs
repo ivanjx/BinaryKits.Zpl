@@ -44,7 +44,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     }
                 }
 
-                this.skCanvas.DrawBitmap(image, x, y);
+                this.skCanvas.DrawBitmap(image, x, y, SKSamplingOptions.Default);
                 return this.CalculateNextDefaultPosition(x, y, image.Width, image.Height, graphicField.FieldOrigin != null, Label.FieldOrientation.Normal, currentPosition);
             }
 

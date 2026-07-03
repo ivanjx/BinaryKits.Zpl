@@ -9,7 +9,11 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
     public class DrawerOptions
     {
         [Obsolete("Use FontManager.FontLoader instead.")]
-        public Func<string, SKTypeface> FontLoader { get; set; }
+        public Func<string, SKTypeface> FontLoader
+        {
+            get => this.FontManager.FontLoader;
+            set => this.FontManager.FontLoader = value;
+        }
 
         /// <summary>
         /// Gets or sets the image format used when rendering output.
@@ -60,7 +64,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         public DrawerOptions(FontManager fontManager)
         {
             this.FontManager = fontManager;
-            this.FontLoader = fontManager.FontLoader;
         }
     }
 }
