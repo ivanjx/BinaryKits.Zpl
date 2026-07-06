@@ -1,8 +1,8 @@
 using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Viewer.BitmapFonts;
+using BinaryKits.Zpl.Viewer.Helpers;
 
 using SkiaSharp;
-using SkiaSharp.HarfBuzz;
 
 using System;
 using System.Collections.Generic;
@@ -75,11 +75,11 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 float margin = Math.Max((skFont.Spacing - textBounds.Height) / 2, MIN_LABEL_MARGIN);
                 if (printInterpretationLineAboveCode)
                 {
-                    this.skCanvas.DrawShapedText(interpretation, x, y - margin, SKTextAlign.Left, skFont, skPaint);
+                    this.skCanvas.DrawShapedTextSafe(interpretation, x, y - margin, SKTextAlign.Left, skFont, skPaint);
                 }
                 else
                 {
-                    this.skCanvas.DrawShapedText(
+                    this.skCanvas.DrawShapedTextSafe(
                         interpretation,
                         x,
                         y + barcodeHeight + textBounds.Height + margin,

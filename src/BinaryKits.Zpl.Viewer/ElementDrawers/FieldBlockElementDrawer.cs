@@ -4,7 +4,6 @@ using BinaryKits.Zpl.Viewer.BitmapFonts;
 using BinaryKits.Zpl.Viewer.Helpers;
 
 using SkiaSharp;
-using SkiaSharp.HarfBuzz;
 
 using System;
 using System.Collections.Generic;
@@ -18,6 +17,8 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
     /// </summary>
     public class FieldBlockElementDrawer : ElementDrawerBase
     {
+        private const string FallbackBitmapFontName = "A";
+
         ///<inheritdoc/>
         public override bool CanDraw(ZplElementBase element)
         {
@@ -203,7 +204,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         }
                         else
                         {
-                            this.skCanvas.DrawShapedText(textLine, x, lineY, SKTextAlign.Left, skFont, skPaint);
+                            this.skCanvas.DrawShapedTextSafe(textLine, x, lineY, SKTextAlign.Left, skFont, skPaint);
                         }
 
                         lineIndex++;
@@ -233,13 +234,17 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             ZplFont font = fieldBlock.Font;
-            if (!IsFixedBitmapTextFont(font.FontName))
+            if (IsFont0Compatible(font.FontName))
             {
                 return false;
             }
 
-            if (options.BitmapFontProvider == null ||
-                !options.BitmapFontProvider.TryGet(font.FontName, printDensityDpmm, internationalFont, out ZplBitmapFontData fontData))
+            if (!TryGetBitmapFontData(
+                    options,
+                    font.FontName,
+                    printDensityDpmm,
+                    internationalFont,
+                    out ZplBitmapFontData fontData))
             {
                 return false;
             }
@@ -369,16 +374,35 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
         }
 
-        private static bool IsFixedBitmapTextFont(string fontName)
-        {
-            return fontName is 
-                "A" or "B" or "C" or "D" or 
-                "E" or "F" or "G" or "H" or "GS";
-        }
-
         private static bool IsFont0Compatible(string fontName)
         {
             return fontName is "0" or "P" or "Q" or "R" or "S" or "T" or "U" or "V";
+        }
+
+        private static bool TryGetBitmapFontData(
+            DrawerOptions options,
+            string fontName,
+            int printDensityDpmm,
+            InternationalFont internationalFont,
+            out ZplBitmapFontData fontData)
+        {
+            fontData = null;
+
+            if (options.BitmapFontProvider == null)
+            {
+                return false;
+            }
+
+            if (options.BitmapFontProvider.TryGet(fontName, printDensityDpmm, internationalFont, out fontData))
+            {
+                return true;
+            }
+
+            return options.BitmapFontProvider.TryGet(
+                FallbackBitmapFontName,
+                printDensityDpmm,
+                internationalFont,
+                out fontData);
         }
 
         private void DrawJustifiedBitmapTextLine(
@@ -439,7 +463,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
             if (words.Length <= 1)
             {
-                this.skCanvas.DrawShapedText(textLine, x, y, SKTextAlign.Left, font, paint);
+                this.skCanvas.DrawShapedTextSafe(textLine, x, y, SKTextAlign.Left, font, paint);
                 return;
             }
 
@@ -455,7 +479,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
             if (!float.IsFinite(gapWidth) || gapWidth <= 0)
             {
-                this.skCanvas.DrawShapedText(textLine, x, y, SKTextAlign.Left, font, paint);
+                this.skCanvas.DrawShapedTextSafe(textLine, x, y, SKTextAlign.Left, font, paint);
                 return;
             }
 
@@ -467,7 +491,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 if (word.Length > 0)
                 {
-                    this.skCanvas.DrawShapedText(word, currentX, y, SKTextAlign.Left, font, paint);
+                    this.skCanvas.DrawShapedTextSafe(word, currentX, y, SKTextAlign.Left, font, paint);
                     currentX += font.MeasureText(word);
                 }
 

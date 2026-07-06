@@ -4,7 +4,6 @@ using BinaryKits.Zpl.Viewer.BitmapFonts;
 using BinaryKits.Zpl.Viewer.Helpers;
 
 using SkiaSharp;
-using SkiaSharp.HarfBuzz;
 
 using System;
 
@@ -15,6 +14,8 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
     /// </summary>
     public class TextFieldElementDrawer : ElementDrawerBase
     {
+        private const string FallbackBitmapFontName = "A";
+
         ///<inheritdoc/>
         public override bool CanDraw(ZplElementBase element)
         {
@@ -174,7 +175,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         }
                     }
 
-                    this.skCanvas.DrawShapedText(displayText, x, y, textAlign, skFont, skPaint);
+                    this.skCanvas.DrawShapedTextSafe(displayText, x, y, textAlign, skFont, skPaint);
 
                     // Update the next default field position after rendering
                     return this.CalculateNextDefaultPosition(x, y, totalWidth, textBounds.Height, false, textField.Font.FieldOrientation, currentPosition);
@@ -208,8 +209,12 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 return false;
             }
 
-            if (options.BitmapFontProvider == null ||
-                !options.BitmapFontProvider.TryGet(font.FontName, printDensityDpmm, internationalFont, out ZplBitmapFontData fontData))
+            if (!TryGetBitmapFontData(
+                    options,
+                    font.FontName,
+                    printDensityDpmm,
+                    internationalFont,
+                    out ZplBitmapFontData fontData))
             {
                 return false;
             }
@@ -317,6 +322,32 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         private static bool IsFont0Compatible(string fontName)
         {
             return fontName is "0" or "P" or "Q" or "R" or "S" or "T" or "U" or "V";
+        }
+
+        private static bool TryGetBitmapFontData(
+            DrawerOptions options,
+            string fontName,
+            int printDensityDpmm,
+            InternationalFont internationalFont,
+            out ZplBitmapFontData fontData)
+        {
+            fontData = null;
+
+            if (options.BitmapFontProvider == null)
+            {
+                return false;
+            }
+
+            if (options.BitmapFontProvider.TryGet(fontName, printDensityDpmm, internationalFont, out fontData))
+            {
+                return true;
+            }
+
+            return options.BitmapFontProvider.TryGet(
+                FallbackBitmapFontName,
+                printDensityDpmm,
+                internationalFont,
+                out fontData);
         }
 
         private static float GetBitmapAlignedX(
