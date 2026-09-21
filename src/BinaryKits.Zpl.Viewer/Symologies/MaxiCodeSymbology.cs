@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -338,13 +339,23 @@ namespace BinaryKits.Zpl.Viewer.Symologies
 
         public static bool[] Encode(string content, int mode)
         {
+            return EncodeInternal(content, mode, requireExactEncoding: false);
+        }
+
+        public static bool[] EncodeExact(string content, int mode)
+        {
+            return EncodeInternal(content, mode, requireExactEncoding: true);
+        }
+
+        private static bool[] EncodeInternal(string content, int mode, bool requireExactEncoding)
+        {
             bool[] result = new bool[974];
             foreach (int idx in orientationPatterns)
             {
                 result[idx] = true;
             }
 
-            List<int> data = Analyze(content, mode);
+            List<int> data = Analyze(content, mode, requireExactEncoding);
 
             foreach ((int val, int idx) in data.Select((v, i) => (v, i)))
             {
@@ -364,7 +375,7 @@ namespace BinaryKits.Zpl.Viewer.Symologies
             return result;
         }
 
-        private static List<int> Analyze(string content, int mode)
+        private static List<int> Analyze(string content, int mode, bool requireExactEncoding)
         {
             List<int> data = [];
             bool eec = false;
@@ -382,8 +393,15 @@ namespace BinaryKits.Zpl.Viewer.Symologies
 
                 if (!mode2Match.Success)
                 {
-                    // invalid mode 2 data, convert to mode 4
-                    return Analyze(content, 4);
+                    if (requireExactEncoding)
+                    {
+                        throw new System.ArgumentException(
+                            "The content does not contain a valid mode 2 primary message",
+                            nameof(content));
+                    }
+
+                    // Preserve the legacy private rendering fallback.
+                    return Analyze(content, 4, requireExactEncoding: false);
                 }
 
                 int service = int.Parse(mode2Match.Groups["service"].Value);
@@ -425,8 +443,15 @@ namespace BinaryKits.Zpl.Viewer.Symologies
 
                 if (!mode3Match.Success)
                 {
-                    // invalid mode 3 data, convert to mode 4
-                    return Analyze(content, 4);
+                    if (requireExactEncoding)
+                    {
+                        throw new ArgumentException(
+                            "The content does not contain a valid mode 3 primary message",
+                            nameof(content));
+                    }
+
+                    // Preserve the legacy private rendering fallback.
+                    return Analyze(content, 4, requireExactEncoding: false);
                 }
 
                 int service = int.Parse(mode3Match.Groups["service"].Value);
@@ -568,10 +593,11 @@ namespace BinaryKits.Zpl.Viewer.Symologies
                         data.Add(codeMap[SHIFT_E]);
                         data.Add(value);
                     }
-                    else
+                    else if (requireExactEncoding)
                     {
-                        // non ISO-8859-1 character, drop
-                        // TODO: change ECI
+                        throw new ArgumentException(
+                            "The content contains a character outside ISO-8859-1",
+                            nameof(content));
                     }
                 }
             }
@@ -590,6 +616,13 @@ namespace BinaryKits.Zpl.Viewer.Symologies
                 }
                 else
                 {
+                    if (requireExactEncoding)
+                    {
+                        throw new ArgumentException(
+                            "The content exceeds MaxiCode mode 5 capacity",
+                            nameof(content));
+                    }
+
                     // too much data for EEC
                     // if mode 5, convert to mode 4, else truncate
                     if (mode == 5)
@@ -615,6 +648,13 @@ namespace BinaryKits.Zpl.Viewer.Symologies
                 }
                 else
                 {
+                    if (requireExactEncoding)
+                    {
+                        throw new ArgumentException(
+                            "The content exceeds MaxiCode capacity",
+                            nameof(content));
+                    }
+
                     // too much data for SEC, truncate
                     data.RemoveRange(104, data.Count - 104);
                 }
