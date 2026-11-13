@@ -185,7 +185,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         float lineY = y + visibleLineIndex * lineHeight;
                         float x = positionX + hangingIndent;
 
-                        skFont.MeasureText(textLine, out SKRect textBounds);
+                        skFont.MeasureShapedText(textLine, out SKRect textBounds);
                         float diff = fieldBlock.Width - textBounds.Width;
 
                         switch (fieldBlock.TextJustification)
@@ -485,7 +485,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
             foreach (string word in words)
             {
-                wordsWidth += font.MeasureText(word);
+                wordsWidth += font.MeasureShapedText(word);
             }
 
             int gapCount = words.Length - 1;
@@ -506,7 +506,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 if (word.Length > 0)
                 {
                     this.skCanvas.DrawShapedTextSafe(word, currentX, y, SKTextAlign.Left, font, paint);
-                    currentX += font.MeasureText(word);
+                    currentX += font.MeasureShapedText(word);
                 }
 
                 if (i < gapCount)
@@ -572,7 +572,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
         private static List<WrappedTextLine> WordWrap(IReadOnlyList<string> paragraphs, SKFont font, int maxWidth)
         {
-            float spaceWidth = font.MeasureText(" ");
+            float spaceWidth = font.MeasureShapedText(" ");
             List<WrappedTextLine> lines = [];
 
             StringBuilder line = new();
@@ -581,7 +581,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             {
                 if (endsParagraph)
                 {
-                    float wordWidth = font.MeasureText(word);
+                    float wordWidth = font.MeasureShapedText(word);
                     if (width + wordWidth <= maxWidth)
                     {
                         line.Append(word);
@@ -602,7 +602,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
                 else
                 {
-                    float wordWidth = font.MeasureText(word);
+                    float wordWidth = font.MeasureShapedText(word);
                     if (wordWidth > maxWidth)
                     {
                         if (line.Length > 0)
@@ -615,9 +615,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         List<string> chunks = SplitLongWord(
                             word,
                             maxWidth,
-                            value => font.MeasureText(value));
+                            value => font.MeasureShapedText(value));
 
-                        AddLongWordChunks(chunks, lines, line, ref width, spaceWidth, value => font.MeasureText(value));
+                        AddLongWordChunks(chunks, lines, line, ref width, spaceWidth, value => font.MeasureShapedText(value));
                         continue;
                     }
 

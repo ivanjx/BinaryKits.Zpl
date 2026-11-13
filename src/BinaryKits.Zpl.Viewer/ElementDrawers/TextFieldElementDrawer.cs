@@ -97,7 +97,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     }
                 }
 
-                float totalWidth = skFont.MeasureText(displayText, out SKRect textBounds);
+                float totalWidth = skFont.MeasureShapedText(displayText, out SKRect textBounds);
 
                 using (new SKAutoCanvasRestore(this.skCanvas))
                 {

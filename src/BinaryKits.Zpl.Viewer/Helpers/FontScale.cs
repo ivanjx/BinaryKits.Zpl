@@ -121,11 +121,18 @@ namespace BinaryKits.Zpl.Viewer.Helpers
         private static readonly (int height, int width) defaultScalingFontScale = (15, 12);
 
         /// <summary>
-        /// Scalable font cap height and baseline as a fraction of the cell height: Zebra's spacing table puts the font 0
-        /// baseline at 3 × HEIGHT / 4, and Labelary draws the cap height at 3/4 of the cell (Triumvirate cap height 750/1000).
+        /// Scalable font baseline as a fraction of the cell height: Zebra's spacing table puts the font 0 baseline at
+        /// 3 × HEIGHT / 4 (Triumvirate cap height 750/1000).
         /// </summary>
         private const int scalableBaselineNumerator = 3;
         private const int scalableBaselineDenominator = 4;
+
+        /// <summary>
+        /// Scalable font em size as a fraction of the cell height. Labelary draws font 0 slightly smaller than an em of
+        /// HEIGHT: glyph advances measure 0.9958–0.9967 of the Triumvirate advances at every height and width, the cap
+        /// height 0.7475 × HEIGHT. 72/72.27 (PostScript to TeX point) fits both.
+        /// </summary>
+        private const float scalableEmRatio = 72.0f / 72.27f;
 
         /// <summary>
         /// Character pitch (matrix width + intercharacter gap) of the A, C and D matrices as a fraction of their height
@@ -148,7 +155,7 @@ namespace BinaryKits.Zpl.Viewer.Helpers
         public static SKFont CreateTextFont(SKTypeface typeface, float cellHeight, float scaleX, bool isScalable)
         {
             return isScalable ?
-                CreateCapHeightFont(typeface, cellHeight * scalableBaselineNumerator / scalableBaselineDenominator, scaleX) :
+                CreateCapHeightFont(typeface, cellHeight * scalableEmRatio * scalableBaselineNumerator / scalableBaselineDenominator, scaleX) :
                 CreateResidentFont(typeface, cellHeight, scaleX);
         }
 

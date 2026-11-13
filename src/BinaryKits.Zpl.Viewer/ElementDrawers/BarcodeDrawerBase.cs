@@ -61,7 +61,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     this.skCanvas.Concat(matrix);
                 }
 
-                skFont.MeasureText(interpretation, out SKRect textBounds);
+                skFont.MeasureShapedText(interpretation, out SKRect textBounds);
                 x += (barcodeWidth - textBounds.Width) / 2;
                 if (!useFieldOrigin)
                 {
