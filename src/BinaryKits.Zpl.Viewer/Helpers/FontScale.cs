@@ -150,13 +150,20 @@ namespace BinaryKits.Zpl.Viewer.Helpers
 
         /// <summary>
         /// Creates the outline font for a text field cell: scalable fonts (0, P–V) by cap height, resident bitmap font
-        /// substitutes (A–H) by character pitch.
+        /// substitutes (A–H) by character pitch. Scalable fonts are rasterized 1-bit (a dot is inked when its center
+        /// lies inside the outline), like the printer's thermal head, instead of Labelary's antialiased edges.
         /// </summary>
         public static SKFont CreateTextFont(SKTypeface typeface, float cellHeight, float scaleX, bool isScalable)
         {
-            return isScalable ?
-                CreateCapHeightFont(typeface, cellHeight * scalableEmRatio * scalableBaselineNumerator / scalableBaselineDenominator, scaleX) :
-                CreateResidentFont(typeface, cellHeight, scaleX);
+            if (!isScalable)
+            {
+                return CreateResidentFont(typeface, cellHeight, scaleX);
+            }
+
+            SKFont font = CreateCapHeightFont(typeface, cellHeight * scalableEmRatio * scalableBaselineNumerator / scalableBaselineDenominator, scaleX);
+            font.Edging = SKFontEdging.Alias;
+
+            return font;
         }
 
         /// <summary>
