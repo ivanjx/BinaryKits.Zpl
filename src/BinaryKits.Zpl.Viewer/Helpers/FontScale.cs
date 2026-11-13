@@ -7,7 +7,7 @@ namespace BinaryKits.Zpl.Viewer.Helpers
 {
     using FontScaleDictionary = Dictionary<string, (int height, int width)>;
 
-    internal static class FontScale
+    public static class FontScale
     {
         private static readonly FontScaleDictionary fontScales6mm = new()
         {
