@@ -49,13 +49,19 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     text = text.ReplaceHexEscapes(hexIndicator, internationalFont);
                 }
 
+                List<string> paragraphs = SplitParagraphs(text);
+                for (int i = 0; i < paragraphs.Count; i++)
+                {
+                    paragraphs[i] = paragraphs[i].ApplyInternationalCharacterSet(font.FontName, internationalFont);
+                }
+
                 if (this.TryDrawBitmapFieldBlock(
                         fieldBlock,
                         options,
                         currentPosition,
                         internationalFont,
                         printDensityDpmm,
-                        text,
+                        paragraphs,
                         out SKPoint nextPosition))
                 {
                     return nextPosition;
@@ -66,14 +72,21 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 SKTypeface typeface = options.FontManager.FontLoader(typefaceFontName);
                 if (IsFont0Compatible(font.FontName))
                 {
-                    if (options.ReplaceDashWithEnDash)
+                    for (int i = 0; i < paragraphs.Count; i++)
                     {
-                        text = text.Replace("-", " \u2013 ");
-                    }
+                        string paragraph = paragraphs[i];
 
-                    if (options.ReplaceUnderscoreWithEnSpace)
-                    {
-                        text = text.Replace('_', '\u2002');
+                        if (options.ReplaceDashWithEnDash)
+                        {
+                            paragraph = paragraph.Replace("-", " \u2013 ");
+                        }
+
+                        if (options.ReplaceUnderscoreWithEnSpace)
+                        {
+                            paragraph = paragraph.Replace('_', '\u2002');
+                        }
+
+                        paragraphs[i] = paragraph;
                     }
                 }
 
@@ -94,7 +107,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     positionY = currentPosition.Y;
                 }
 
-                List<WrappedTextLine> textLines = WordWrap(text, skFont, fieldBlock.Width);
+                List<WrappedTextLine> textLines = WordWrap(paragraphs, skFont, fieldBlock.Width);
                 int hangingIndent = 0;
                 float lineHeight = fontSize + fieldBlock.LineSpace;
                 float y = positionY + textBoundBaseline.Height;
@@ -223,7 +236,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             SKPoint currentPosition,
             InternationalFont internationalFont,
             int printDensityDpmm,
-            string displayText,
+            IReadOnlyList<string> paragraphs,
             out SKPoint nextPosition)
         {
             nextPosition = currentPosition;
@@ -250,7 +263,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             ZplBitmapFontMetrics metrics = CreateExpandedMetrics(fontData.Metrics, font.FontHeight, font.FontWidth, fieldBlock.LineSpace);
-            List<WrappedTextLine> textLines = WordWrap(displayText, metrics, fieldBlock.Width);
+            List<WrappedTextLine> textLines = WordWrap(paragraphs, metrics, fieldBlock.Width);
             int maxLineCount = Math.Max(fieldBlock.MaxLineCount, 1);
             int totalHeight = metrics.LineHeight * maxLineCount - fieldBlock.LineSpace;
             float x = fieldBlock.PositionX;
@@ -502,22 +515,71 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
         }
 
-        private static List<WrappedTextLine> WordWrap(string text, SKFont font, int maxWidth)
+        /// <summary>
+        /// Splits ^FB field data at <c>\&amp;</c> line breaks and decodes <c>\\</c> to a backslash.
+        /// </summary>
+        private static List<string> SplitParagraphs(string text)
+        {
+            List<string> paragraphs = [];
+            StringBuilder paragraph = new();
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                if (c == '\\' && i + 1 < text.Length)
+                {
+                    char next = text[i + 1];
+                    if (next == '&')
+                    {
+                        paragraphs.Add(paragraph.ToString());
+                        paragraph.Clear();
+                        i++;
+                        continue;
+                    }
+
+                    if (next == '\\')
+                    {
+                        paragraph.Append('\\');
+                        i++;
+                        continue;
+                    }
+                }
+
+                paragraph.Append(c);
+            }
+
+            paragraphs.Add(paragraph.ToString());
+            return paragraphs;
+        }
+
+        /// <summary>
+        /// Splits paragraphs into space separated words; the last word of every paragraph but the last ends its line.
+        /// </summary>
+        private static IEnumerable<(string Word, bool EndsParagraph)> SplitWords(IReadOnlyList<string> paragraphs)
+        {
+            for (int i = 0; i < paragraphs.Count; i++)
+            {
+                string[] words = paragraphs[i].Split(' ');
+                bool isLastParagraph = i == paragraphs.Count - 1;
+
+                for (int j = 0; j < words.Length; j++)
+                {
+                    yield return (words[j], !isLastParagraph && j == words.Length - 1);
+                }
+            }
+        }
+
+        private static List<WrappedTextLine> WordWrap(IReadOnlyList<string> paragraphs, SKFont font, int maxWidth)
         {
             float spaceWidth = font.MeasureText(" ");
             List<WrappedTextLine> lines = [];
 
-            Stack<string> words = new(text.Split([' '], StringSplitOptions.None).AsEnumerable().Reverse());
             StringBuilder line = new();
             float width = 0;
-            while (words.Count != 0)
+            foreach ((string word, bool endsParagraph) in SplitWords(paragraphs))
             {
-                string word = words.Pop();
-                if (word.Contains(@"\&"))
+                if (endsParagraph)
                 {
-                    string[] subwords = word.Split([@"\&"], 2, StringSplitOptions.None);
-                    word = subwords[0];
-                    words.Push(subwords[1]);
                     float wordWidth = font.MeasureText(word);
                     if (width + wordWidth <= maxWidth)
                     {
@@ -580,22 +642,17 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             return lines;
         }
 
-        private static List<WrappedTextLine> WordWrap(string text, ZplBitmapFontMetrics metrics, int maxWidth)
+        private static List<WrappedTextLine> WordWrap(IReadOnlyList<string> paragraphs, ZplBitmapFontMetrics metrics, int maxWidth)
         {
             int spaceWidth = ZplBitmapFontRenderer.MeasureTextWidth(" ", metrics);
             List<WrappedTextLine> lines = [];
 
-            Stack<string> words = new(text.Split([' '], StringSplitOptions.None).AsEnumerable().Reverse());
             StringBuilder line = new();
             float width = 0;
-            while (words.Count != 0)
+            foreach ((string word, bool endsParagraph) in SplitWords(paragraphs))
             {
-                string word = words.Pop();
-                if (word.Contains(@"\&"))
+                if (endsParagraph)
                 {
-                    string[] subwords = word.Split([@"\&"], 2, StringSplitOptions.None);
-                    word = subwords[0];
-                    words.Push(subwords[1]);
                     int wordWidth = ZplBitmapFontRenderer.MeasureTextWidth(word, metrics);
                     if (width + wordWidth <= maxWidth)
                     {

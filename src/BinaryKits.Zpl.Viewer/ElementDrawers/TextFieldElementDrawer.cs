@@ -56,6 +56,8 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     displayText = displayText.ReplaceHexEscapes(hexIndicator, internationalFont);
                 }
 
+                displayText = displayText.ApplyInternationalCharacterSet(font.FontName, internationalFont);
+
                 if (this.TryDrawBitmapTextField(
                         textField,
                         options,
