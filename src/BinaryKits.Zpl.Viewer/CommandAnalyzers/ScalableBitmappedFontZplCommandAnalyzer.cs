@@ -30,8 +30,9 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 parsedWidth = tmpint;
             }
 
-            int fontHeight = parsedHeight ?? virtualPrinter.FontHeight;
-            int fontWidth = parsedWidth ?? virtualPrinter.FontWidth;
+            // Both omitted: ^CF defaults; one given: the other stays 0 and is derived from the font matrix
+            int fontHeight = parsedHeight ?? (parsedWidth == null ? virtualPrinter.FontHeight : 0);
+            int fontWidth = parsedWidth ?? (parsedHeight == null ? virtualPrinter.FontWidth : 0);
 
             virtualPrinter.SetNextFont(fontName, fieldOrientation, fontWidth, fontHeight);
 

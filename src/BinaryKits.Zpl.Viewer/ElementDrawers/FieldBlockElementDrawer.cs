@@ -847,10 +847,10 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             int lineSpacing)
         {
             int expansionY = fontHeight > 0 ?
-                GetExpansion(fontHeight, metrics.MatrixHeight) :
+                FontScale.GetMagnification(fontHeight, metrics.MatrixHeight) :
                 1;
             int expansionX = fontWidth > 0 ?
-                GetExpansion(fontWidth, metrics.MatrixWidth) :
+                FontScale.GetMagnification(fontWidth, metrics.MatrixWidth) :
                 expansionY;
 
             if (fontHeight == 0 && fontWidth > 0)
@@ -859,11 +859,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             return metrics.WithExpansion(expansionX, expansionY, lineSpacing);
-        }
-
-        private static int GetExpansion(int requestedSize, int matrixSize)
-        {
-            return (int)Math.Max(1, Math.Round((double)requestedSize / matrixSize));
         }
 
         private sealed class WrappedTextLine

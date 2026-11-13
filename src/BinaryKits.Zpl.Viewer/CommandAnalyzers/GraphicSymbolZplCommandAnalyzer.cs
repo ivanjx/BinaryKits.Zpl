@@ -16,18 +16,22 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
             FieldOrientation fieldOrientation = this.ConvertFieldOrientation(zplDataParts[0], virtualPrinter);
 
             int tmpint;
-            int height = virtualPrinter.FontHeight;
-            int width = virtualPrinter.FontWidth;
+            int? parsedHeight = null;
+            int? parsedWidth = null;
 
             if (zplDataParts.Length > 1 && int.TryParse(zplDataParts[1], out tmpint))
             {
-                height = tmpint;
+                parsedHeight = tmpint;
             }
 
             if (zplDataParts.Length > 2 && int.TryParse(zplDataParts[2], out tmpint))
             {
-                width = tmpint;
+                parsedWidth = tmpint;
             }
+
+            // Both omitted: ^CF defaults; one given: the other stays 0 and is derived from the GS matrix
+            int height = parsedHeight ?? (parsedWidth == null ? virtualPrinter.FontHeight : 0);
+            int width = parsedWidth ?? (parsedHeight == null ? virtualPrinter.FontWidth : 0);
 
             //The field data are processing in the FieldDataZplCommandAnalyzer
             virtualPrinter.SetNextElementFieldData(new GraphicSymbolFieldData

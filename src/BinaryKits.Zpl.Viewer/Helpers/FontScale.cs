@@ -127,6 +127,16 @@ namespace BinaryKits.Zpl.Viewer.Helpers
             return GetFontScale(fontName, printDensityDpmm)?.height * scalingFactor * heightScale;
         }
 
+        /// <summary>
+        /// Integer magnification of a font matrix axis: nearest multiple (half away from zero), 1 to 10.
+        /// </summary>
+        public static int GetMagnification(int requestedSize, int matrixSize)
+        {
+            double ratio = Math.Round((double)requestedSize / matrixSize, MidpointRounding.AwayFromZero);
+
+            return (int)Math.Clamp(ratio, 1, 10);
+        }
+
         public static (float fontSize, float scaleX) GetFontScaling(string fontName, int fontHeight, int fontWidth, int printDensityDpmm)
         {
             (int height, int width)? fontScale = GetFontScale(fontName, printDensityDpmm);
@@ -136,8 +146,7 @@ namespace BinaryKits.Zpl.Viewer.Helpers
                 (int height, int width) = fontScale.Value;
                 if (fontHeight > 0)
                 {
-                    double heightRatio = (double)fontHeight / height;
-                    int intHeightRatio = (int)Math.Max(1, Math.Round(heightRatio));
+                    int intHeightRatio = GetMagnification(fontHeight, height);
                     float emSize = height * intHeightRatio * heightScale;
 
                     if (fontWidth == 0)
@@ -145,15 +154,13 @@ namespace BinaryKits.Zpl.Viewer.Helpers
                         return (emSize, 1.0f);
                     }
 
-                    double widthRatio = (double)fontWidth / width;
-                    int intWidthRatio = (int)Math.Max(1, Math.Round(widthRatio));
+                    int intWidthRatio = GetMagnification(fontWidth, width);
 
                     return (emSize, (float)intWidthRatio / intHeightRatio);
                 }
                 else if (fontWidth > 0)
                 {
-                    double widthRatio = (double)fontWidth / width;
-                    int intWidthRatio = (int)Math.Max(1, Math.Round(widthRatio));
+                    int intWidthRatio = GetMagnification(fontWidth, width);
 
                     return (height * intWidthRatio * heightScale, 1.0f);
                 }
@@ -163,10 +170,14 @@ namespace BinaryKits.Zpl.Viewer.Helpers
                 }
             }
 
-            float fontSize = fontHeight > 0 ? fontHeight : fontWidth > 0 ? fontWidth : defaultScalingFontScale.height;
+            // Scalable fonts: a missing dimension follows the font 0 matrix ratio (15 high by 12 wide),
+            // which renders at the natural aspect (scaleX 1).
+            float fontSize = fontHeight > 0 ?
+                fontHeight :
+                fontWidth > 0 ? (float)Math.Round(fontWidth * (double)defaultScalingFontScale.height / defaultScalingFontScale.width, MidpointRounding.AwayFromZero) : defaultScalingFontScale.height;
             float scaleX = 1.0f;
 
-            if (fontWidth != 0 && fontWidth != fontSize)
+            if (fontHeight > 0 && fontWidth > 0 && fontWidth != fontSize)
             {
                 scaleX = fontWidth / fontSize;
             }
