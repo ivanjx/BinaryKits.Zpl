@@ -118,7 +118,11 @@ namespace BinaryKits.Zpl.Viewer.Helpers
             return null;
         }
 
-        private static readonly (int height, int width) defaultScalingFontScale = (15, 12);
+        /// <summary>
+        /// Scalable font height and width range in dots (Zebra <c>^A</c>: 10 to 32000).
+        /// </summary>
+        private const int scalableMinSize = 10;
+        private const int scalableMaxSize = 32000;
 
         /// <summary>
         /// Scalable font baseline as a fraction of the cell height: Zebra's spacing table puts the font 0 baseline at
@@ -267,17 +271,12 @@ namespace BinaryKits.Zpl.Viewer.Helpers
                 }
             }
 
-            // Scalable fonts: a missing dimension follows the font 0 matrix ratio (15 high by 12 wide),
-            // which renders at the natural aspect (scaleX 1).
-            float fontSize = fontHeight > 0 ?
-                fontHeight :
-                fontWidth > 0 ? (float)Math.Round(fontWidth * (double)defaultScalingFontScale.height / defaultScalingFontScale.width, MidpointRounding.AwayFromZero) : defaultScalingFontScale.height;
-            float scaleX = 1.0f;
-
-            if (fontHeight > 0 && fontWidth > 0 && fontWidth != fontSize)
-            {
-                scaleX = fontWidth / fontSize;
-            }
+            // Scalable fonts: a missing dimension equals the other one (natural aspect), each clamped to 10–32000
+            // (Labelary: ^A0N,,20 is 20×20, ^A0N,9,5 is 10×10)
+            int scalableHeight = fontHeight > 0 ? fontHeight : fontWidth;
+            int scalableWidth = fontWidth > 0 ? fontWidth : fontHeight;
+            float fontSize = Math.Clamp(scalableHeight, scalableMinSize, scalableMaxSize);
+            float scaleX = Math.Clamp(scalableWidth, scalableMinSize, scalableMaxSize) / fontSize;
 
             return (fontSize, scaleX);
         }

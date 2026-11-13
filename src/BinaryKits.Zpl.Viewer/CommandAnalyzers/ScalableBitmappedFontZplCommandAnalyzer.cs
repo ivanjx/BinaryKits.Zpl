@@ -17,22 +17,20 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
             FieldOrientation fieldOrientation = this.ConvertFieldOrientation(zplDataParts[0], virtualPrinter);
 
             int tmpint;
-            int? parsedHeight = null;
-            int? parsedWidth = null;
+            int fontHeight = virtualPrinter.FontHeight;
+            int fontWidth = virtualPrinter.FontWidth;
 
-            if (zplDataParts.Length > 1 && int.TryParse(zplDataParts[1], out tmpint))
+            // An omitted or 0 dimension takes the ^CF value; when that is unset too it stays 0 and the drawers
+            // derive it from the other dimension or the font matrix
+            if (zplDataParts.Length > 1 && int.TryParse(zplDataParts[1], out tmpint) && tmpint > 0)
             {
-                parsedHeight = tmpint;
+                fontHeight = tmpint;
             }
 
-            if (zplDataParts.Length > 2 && int.TryParse(zplDataParts[2], out tmpint))
+            if (zplDataParts.Length > 2 && int.TryParse(zplDataParts[2], out tmpint) && tmpint > 0)
             {
-                parsedWidth = tmpint;
+                fontWidth = tmpint;
             }
-
-            // Both omitted: ^CF defaults; one given: the other stays 0 and is derived from the font matrix
-            int fontHeight = parsedHeight ?? (parsedWidth == null ? virtualPrinter.FontHeight : 0);
-            int fontWidth = parsedWidth ?? (parsedHeight == null ? virtualPrinter.FontWidth : 0);
 
             virtualPrinter.SetNextFont(fontName, fieldOrientation, fontWidth, fontHeight);
 

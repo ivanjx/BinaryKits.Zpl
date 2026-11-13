@@ -16,22 +16,20 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
             FieldOrientation fieldOrientation = this.ConvertFieldOrientation(zplDataParts[0], virtualPrinter);
 
             int tmpint;
-            int? parsedHeight = null;
-            int? parsedWidth = null;
+            int height = virtualPrinter.FontHeight;
+            int width = virtualPrinter.FontWidth;
 
-            if (zplDataParts.Length > 1 && int.TryParse(zplDataParts[1], out tmpint))
+            // An omitted or 0 dimension takes the ^CF value; when that is unset too it stays 0 and the drawer
+            // derives it from the other dimension or the GS matrix
+            if (zplDataParts.Length > 1 && int.TryParse(zplDataParts[1], out tmpint) && tmpint > 0)
             {
-                parsedHeight = tmpint;
+                height = tmpint;
             }
 
-            if (zplDataParts.Length > 2 && int.TryParse(zplDataParts[2], out tmpint))
+            if (zplDataParts.Length > 2 && int.TryParse(zplDataParts[2], out tmpint) && tmpint > 0)
             {
-                parsedWidth = tmpint;
+                width = tmpint;
             }
-
-            // Both omitted: ^CF defaults; one given: the other stays 0 and is derived from the GS matrix
-            int height = parsedHeight ?? (parsedWidth == null ? virtualPrinter.FontHeight : 0);
-            int width = parsedWidth ?? (parsedHeight == null ? virtualPrinter.FontWidth : 0);
 
             //The field data are processing in the FieldDataZplCommandAnalyzer
             virtualPrinter.SetNextElementFieldData(new GraphicSymbolFieldData
