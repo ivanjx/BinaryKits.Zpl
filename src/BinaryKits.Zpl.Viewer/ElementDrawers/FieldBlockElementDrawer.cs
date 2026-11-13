@@ -170,12 +170,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         this.skCanvas.SetMatrix(concatMatrix);
                     }
 
-                    float clipTop = y - baseline;
-                    this.skCanvas.ClipRect(new SKRect(
-                        positionX,
-                        clipTop,
-                        positionX + fieldBlock.Width,
-                        clipTop + totalHeight));
                     int lineIndex = 0;
 
                     foreach (WrappedTextLine wrappedLine in textLines)
@@ -188,13 +182,20 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         skFont.MeasureShapedText(textLine, out SKRect textBounds);
                         float diff = fieldBlock.Width - textBounds.Width;
 
+                        // A line wider than the block starts at the block's x for every justification (Labelary)
                         switch (fieldBlock.TextJustification)
                         {
                             case TextJustification.Center:
-                                x += diff / 2 - textBounds.Left;
+                                if (diff > 0)
+                                {
+                                    x += diff / 2 - textBounds.Left;
+                                }
                                 break;
                             case TextJustification.Right:
-                                x += diff - textBounds.Left * 2;
+                                if (diff > 0)
+                                {
+                                    x += diff - textBounds.Left * 2;
+                                }
                                 hangingIndent = -fieldBlock.HangingIndent;
                                 break;
                             case TextJustification.Left:
@@ -292,12 +293,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     this.skCanvas.SetMatrix(concatMatrix);
                 }
 
-                this.skCanvas.ClipRect(new SKRect(
-                    x,
-                    topY,
-                    x + fieldBlock.Width,
-                    topY + totalHeight));
-
                 using SKPaint paint = ZplBitmapFontRenderer.CreatePaint(fieldBlock.ReversePrint);
                 ZplBitmapFontRenderer renderer = new(this.skCanvas);
                 int hangingIndent = 0;
@@ -312,13 +307,20 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     float lineY = topY + visibleLineIndex * metrics.LineHeight;
                     float diff = fieldBlock.Width - lineWidth;
 
+                    // A line wider than the block starts at the block's x for every justification (Labelary)
                     switch (fieldBlock.TextJustification)
                     {
                         case TextJustification.Center:
-                            lineX += diff / 2;
+                            if (diff > 0)
+                            {
+                                lineX += diff / 2;
+                            }
                             break;
                         case TextJustification.Right:
-                            lineX += diff;
+                            if (diff > 0)
+                            {
+                                lineX += diff;
+                            }
                             hangingIndent = -fieldBlock.HangingIndent;
                             break;
                         case TextJustification.Left:
