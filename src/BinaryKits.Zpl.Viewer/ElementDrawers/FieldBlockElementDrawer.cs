@@ -67,10 +67,11 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     return nextPosition;
                 }
 
-                (float fontSize, float scaleX) = FontScale.GetFontScaling(font.FontName, font.FontHeight, font.FontWidth, printDensityDpmm);
-                string typefaceFontName = IsFont0Compatible(font.FontName) ? "0" : font.FontName;
+                (float cellHeight, float scaleX) = FontScale.GetFontScaling(font.FontName, font.FontHeight, font.FontWidth, printDensityDpmm);
+                bool isScalable = IsFont0Compatible(font.FontName);
+                string typefaceFontName = isScalable ? "0" : font.FontName;
                 SKTypeface typeface = options.FontManager.FontLoader(typefaceFontName);
-                if (IsFont0Compatible(font.FontName))
+                if (isScalable)
                 {
                     for (int i = 0; i < paragraphs.Count; i++)
                     {
@@ -90,13 +91,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     }
                 }
 
-                SKFont skFont = new(typeface, fontSize, scaleX);
+                using SKFont skFont = FontScale.CreateTextFont(typeface, cellHeight, scaleX, isScalable);
                 using SKPaint skPaint = new()
                 {
                     IsAntialias = options.Antialias
                 };
 
-                skFont.MeasureText("X", out SKRect textBoundBaseline);
+                float baseline = FontScale.GetTextBaseline(skFont, cellHeight, isScalable);
 
                 float positionX = fieldBlock.PositionX;
                 float positionY = fieldBlock.PositionY;
@@ -109,8 +110,8 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 List<WrappedTextLine> textLines = WordWrap(paragraphs, skFont, fieldBlock.Width);
                 int hangingIndent = 0;
-                float lineHeight = fontSize + fieldBlock.LineSpace;
-                float y = positionY + textBoundBaseline.Height;
+                float lineHeight = cellHeight + fieldBlock.LineSpace;
+                float y = positionY + baseline;
 
                 // actual ZPL printer does not include trailing line spacing in total height
                 float totalHeight = lineHeight * fieldBlock.MaxLineCount - fieldBlock.LineSpace;
@@ -119,7 +120,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 if (fieldBlock.FieldTypeset != null)
                 {
-                    totalHeight = lineHeight * (fieldBlock.MaxLineCount - 1) + textBoundBaseline.Height;
+                    totalHeight = lineHeight * (fieldBlock.MaxLineCount - 1) + baseline;
                     y -= totalHeight;
                 }
 
@@ -169,7 +170,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         this.skCanvas.SetMatrix(concatMatrix);
                     }
 
-                    float clipTop = y - textBoundBaseline.Height;
+                    float clipTop = y - baseline;
                     this.skCanvas.ClipRect(new SKRect(
                         positionX,
                         clipTop,

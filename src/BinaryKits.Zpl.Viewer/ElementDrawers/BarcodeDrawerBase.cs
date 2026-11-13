@@ -106,9 +106,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         {
             if (!TryGetBitmapInterpretationLineFont(options, internationalFont, printDensityDpmm, moduleWidth, out ZplBitmapFontData fontData, out ZplBitmapFontMetrics metrics))
             {
-                float labelFontSize = Helpers.FontScale.GetBitmappedFontSize(INTERPRETATION_LINE_FONT_NAME, Math.Min(moduleWidth, 10), printDensityDpmm).Value;
+                int labelCellHeight = FontScale.GetCellHeight(INTERPRETATION_LINE_FONT_NAME, Math.Min(moduleWidth, 10), printDensityDpmm).Value;
                 SKTypeface labelTypeFace = options.FontManager.FontLoader(INTERPRETATION_LINE_FONT_NAME);
-                using SKFont labelFont = new(labelTypeFace, labelFontSize);
+                using SKFont labelFont = FontScale.CreateResidentFont(labelTypeFace, labelCellHeight);
                 this.DrawInterpretationLine(interpretation, labelFont, x, y, barcodeWidth, barcodeHeight, useFieldOrigin, fieldOrientation, printInterpretationLineAboveCode, options);
                 return;
             }

@@ -72,18 +72,19 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     return nextPosition;
                 }
 
-                (float fontSize, float scaleX) = FontScale.GetFontScaling(font.FontName, font.FontHeight, font.FontWidth, printDensityDpmm);
+                (float cellHeight, float scaleX) = FontScale.GetFontScaling(font.FontName, font.FontHeight, font.FontWidth, printDensityDpmm);
+                bool isScalable = IsFont0Compatible(font.FontName);
 
-                string typefaceFontName = IsFont0Compatible(font.FontName) ? "0" : font.FontName;
+                string typefaceFontName = isScalable ? "0" : font.FontName;
                 SKTypeface typeface = options.FontManager.FontLoader(typefaceFontName);
 
-                SKFont skFont = new(typeface, fontSize, scaleX);
+                using SKFont skFont = FontScale.CreateTextFont(typeface, cellHeight, scaleX, isScalable);
                 using SKPaint skPaint = new()
                 {
                     IsAntialias = options.Antialias
                 };
 
-                if (IsFont0Compatible(font.FontName))
+                if (isScalable)
                 {
                     if (options.ReplaceDashWithEnDash)
                     {
@@ -96,7 +97,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     }
                 }
 
-                skFont.MeasureText("X", out SKRect textBoundBaseline);
                 float totalWidth = skFont.MeasureText(displayText, out SKRect textBounds);
 
                 using (new SKAutoCanvasRestore(this.skCanvas))
@@ -108,13 +108,13 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         switch (textField.Font.FieldOrientation)
                         {
                             case FieldOrientation.Rotated90:
-                                matrix = SKMatrix.CreateRotationDegrees(90, x + fontSize / 2, y + fontSize / 2);
+                                matrix = SKMatrix.CreateRotationDegrees(90, x + cellHeight / 2, y + cellHeight / 2);
                                 break;
                             case FieldOrientation.Rotated180:
-                                matrix = SKMatrix.CreateRotationDegrees(180, x + textBounds.Width / 2, y + fontSize / 2);
+                                matrix = SKMatrix.CreateRotationDegrees(180, x + totalWidth / 2, y + cellHeight / 2);
                                 break;
                             case FieldOrientation.Rotated270:
-                                matrix = SKMatrix.CreateRotationDegrees(270, x + textBounds.Width / 2, y + textBounds.Width / 2);
+                                matrix = SKMatrix.CreateRotationDegrees(270, x + totalWidth / 2, y + totalWidth / 2);
                                 break;
                             case FieldOrientation.Normal:
                                 break;
@@ -149,7 +149,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                     if (textField.FieldTypeset == null)
                     {
-                        y += textBoundBaseline.Height;
+                        y += FontScale.GetTextBaseline(skFont, cellHeight, isScalable);
                     }
 
                     if (textField.ReversePrint)

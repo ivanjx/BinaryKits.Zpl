@@ -198,9 +198,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     return;
                 }
 
-                float labelFontSize = FontScale.GetBitmappedFontSize("A", Math.Min(moduleWidth, 10), printDensityDpmm).Value;
+                int labelCellHeight = FontScale.GetCellHeight("A", Math.Min(moduleWidth, 10), printDensityDpmm).Value;
                 SKTypeface labelTypeFace = options.FontManager.FontLoader("A");
-                using SKFont skFont = new(labelTypeFace, labelFontSize);
+                using SKFont skFont = FontScale.CreateResidentFont(labelTypeFace, labelCellHeight);
                 using SKPaint skPaint = new()
                 {
                     IsAntialias = options.Antialias

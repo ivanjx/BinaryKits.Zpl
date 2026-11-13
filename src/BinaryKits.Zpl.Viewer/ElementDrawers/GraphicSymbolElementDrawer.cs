@@ -51,14 +51,12 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     return nextPosition;
                 }
 
-                (float fontSize, float scaleX) = FontScale.GetFontScaling("GS", graphicSymbol.Height, graphicSymbol.Width, printDensityDpmm);
-
-                // remove incorrect scaling
-                fontSize /= 1.1f;
+                (float cellHeight, float scaleX) = FontScale.GetFontScaling("GS", graphicSymbol.Height, graphicSymbol.Width, printDensityDpmm);
 
                 SKTypeface typeface = options.FontManager.TypefaceGS;
 
-                SKFont skFont = new(typeface, fontSize * 1.25f, scaleX);
+                // The symbols fill the whole cell: ZplGS.ttf draws them at its cap height
+                using SKFont skFont = FontScale.CreateCapHeightFont(typeface, cellHeight, scaleX);
                 using SKPaint skPaint = new()
                 {
                     IsAntialias = options.Antialias
@@ -75,10 +73,10 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         switch (graphicSymbol.FieldOrientation)
                         {
                             case FieldOrientation.Rotated90:
-                                matrix = SKMatrix.CreateRotationDegrees(90, x + fontSize / 2, y + fontSize / 2);
+                                matrix = SKMatrix.CreateRotationDegrees(90, x + cellHeight / 2, y + cellHeight / 2);
                                 break;
                             case FieldOrientation.Rotated180:
-                                matrix = SKMatrix.CreateRotationDegrees(180, x + textBounds.Width / 2, y + fontSize / 2);
+                                matrix = SKMatrix.CreateRotationDegrees(180, x + textBounds.Width / 2, y + cellHeight / 2);
                                 break;
                             case FieldOrientation.Rotated270:
                                 matrix = SKMatrix.CreateRotationDegrees(270, x + textBounds.Width / 2, y + textBounds.Width / 2);
@@ -116,7 +114,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                     if (graphicSymbol.FieldTypeset == null)
                     {
-                        y += fontSize;
+                        y += cellHeight;
                     }
 
                     SKTextAlign textAlign = SKTextAlign.Left;
