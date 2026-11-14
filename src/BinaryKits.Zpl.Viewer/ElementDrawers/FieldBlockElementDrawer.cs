@@ -68,7 +68,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
 
                 (float cellHeight, float scaleX) = FontScale.GetFontScaling(font.FontName, font.FontHeight, font.FontWidth, printDensityDpmm);
-                bool isScalable = IsFont0Compatible(font.FontName);
+                bool isScalable = FontScale.IsScalableFont(font.FontName);
                 string typefaceFontName = isScalable ? "0" : font.FontName;
                 SKTypeface typeface = options.FontManager.FontLoader(typefaceFontName);
                 if (isScalable)
@@ -91,13 +91,15 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     }
                 }
 
-                using SKFont skFont = FontScale.CreateTextFont(typeface, cellHeight, scaleX, isScalable);
+                using SKFont skFont = FontScale.CreateTextFont(typeface, font.FontName, cellHeight, scaleX);
                 using SKPaint skPaint = new()
                 {
                     IsAntialias = options.Antialias
                 };
 
-                float baseline = FontScale.GetTextBaseline(skFont, cellHeight, isScalable);
+                // P–V lines are closer than the cell; the baseline keeps the cell's descent
+                float lineCellHeight = FontScale.GetFieldBlockCellHeight(font.FontName, cellHeight);
+                float baseline = FontScale.GetTextBaseline(skFont, font.FontName, cellHeight) - (cellHeight - lineCellHeight);
 
                 float positionX = fieldBlock.PositionX;
                 float positionY = fieldBlock.PositionY;
@@ -110,7 +112,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 List<WrappedTextLine> textLines = WordWrap(paragraphs, skFont, fieldBlock.Width);
                 int hangingIndent = 0;
-                float lineHeight = cellHeight + fieldBlock.LineSpace;
+                float lineHeight = lineCellHeight + fieldBlock.LineSpace;
                 float y = positionY + baseline;
 
                 // actual ZPL printer does not include trailing line spacing in total height
@@ -249,7 +251,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             ZplFont font = fieldBlock.Font;
-            if (IsFont0Compatible(font.FontName))
+            if (FontScale.IsScalableFont(font.FontName))
             {
                 return false;
             }
@@ -388,11 +390,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 default:
                     return SKMatrix.Empty;
             }
-        }
-
-        private static bool IsFont0Compatible(string fontName)
-        {
-            return fontName is "0" or "P" or "Q" or "R" or "S" or "T" or "U" or "V";
         }
 
         private static bool TryGetBitmapFontData(

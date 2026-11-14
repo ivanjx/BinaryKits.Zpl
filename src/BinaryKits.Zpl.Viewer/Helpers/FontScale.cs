@@ -19,14 +19,7 @@ namespace BinaryKits.Zpl.Viewer.Helpers
             ["F"] = (26, 13),
             ["G"] = (60, 40),
             ["H"] = (17, 11),
-            ["GS"] = (24, 24),
-            ["P"] = (20, 18),
-            ["Q"] = (28, 24),
-            ["R"] = (35, 31),
-            ["S"] = (40, 35),
-            ["T"] = (48, 42),
-            ["U"] = (59, 53),
-            ["V"] = (80, 71)
+            ["GS"] = (24, 24)
         };
 
         private static readonly FontScaleDictionary fontScales8mm = new()
@@ -39,14 +32,7 @@ namespace BinaryKits.Zpl.Viewer.Helpers
             ["F"] = (26, 13),
             ["G"] = (60, 40),
             ["H"] = (21, 13),
-            ["GS"] = (24, 24),
-            ["P"] = (20, 18),
-            ["Q"] = (28, 24),
-            ["R"] = (35, 31),
-            ["S"] = (40, 35),
-            ["T"] = (48, 42),
-            ["U"] = (59, 53),
-            ["V"] = (80, 71)
+            ["GS"] = (24, 24)
         };
 
         private static readonly FontScaleDictionary fontScales12mm = new()
@@ -59,14 +45,7 @@ namespace BinaryKits.Zpl.Viewer.Helpers
             ["F"] = (26, 13),
             ["G"] = (60, 40),
             ["H"] = (34, 22),
-            ["GS"] = (24, 24),
-            ["P"] = (20, 18),
-            ["Q"] = (28, 24),
-            ["R"] = (35, 31),
-            ["S"] = (40, 35),
-            ["T"] = (48, 42),
-            ["U"] = (59, 53),
-            ["V"] = (80, 71)
+            ["GS"] = (24, 24)
         };
 
         private static readonly FontScaleDictionary fontScales24mm = new()
@@ -79,15 +58,34 @@ namespace BinaryKits.Zpl.Viewer.Helpers
             ["F"] = (26, 13),
             ["G"] = (60, 40),
             ["H"] = (34, 22),
-            ["GS"] = (24, 24),
-            ["P"] = (20, 18),
-            ["Q"] = (28, 24),
-            ["R"] = (35, 31),
-            ["S"] = (40, 35),
-            ["T"] = (48, 42),
-            ["U"] = (59, 53),
-            ["V"] = (80, 71)
+            ["GS"] = (24, 24)
         };
+
+        /// <summary>
+        /// Resident fonts P–V at 1×, the same at every density: matrix height and width, baseline below the cell top,
+        /// <c>^FB</c> line height, and the em height and width in dots of the scalable font 0 typeface they are drawn with.
+        /// Measured on Labelary (6/8/12 dpmm): the matrix magnifies per axis like A–H, but an omitted axis stays 1×; the
+        /// em comes from the cap height (vertical) and the advance of repeated glyphs (horizontal), which differ for
+        /// R–V; <c>^FB</c> lines are closer than the cell and keep its descent below the baseline.
+        /// </summary>
+        private static readonly Dictionary<string, MatrixScalableFont> matrixScalableFonts = new()
+        {
+            ["P"] = new(20, 18, 15, 17, 16.12f, 16.12f),
+            ["Q"] = new(28, 24, 21, 24, 22.92f, 22.67f),
+            ["R"] = new(35, 31, 27, 30, 29.90f, 29.27f),
+            ["S"] = new(40, 35, 31, 34, 33.69f, 33.31f),
+            ["T"] = new(48, 42, 37, 40, 40.67f, 39.40f),
+            ["U"] = new(59, 53, 46, 50, 50.02f, 49.99f),
+            ["V"] = new(80, 71, 62, 67, 67.27f, 66.53f)
+        };
+
+        private readonly record struct MatrixScalableFont(
+            int Height,
+            int Width,
+            int Baseline,
+            int FieldBlockLineHeight,
+            float EmHeight,
+            float EmWidth);
 
         private static (int height, int width)? GetFontScale(string fontName, int printDensityDpmm)
         {
@@ -145,6 +143,14 @@ namespace BinaryKits.Zpl.Viewer.Helpers
         private const float residentPitchRatio = 2.0f / 3.0f;
 
         /// <summary>
+        /// Fonts drawn with the scalable font 0 typeface: font 0 and the resident fonts P–V.
+        /// </summary>
+        public static bool IsScalableFont(string fontName)
+        {
+            return fontName == "0" || matrixScalableFonts.ContainsKey(fontName);
+        }
+
+        /// <summary>
         /// Cell height in dots of a font matrix at an integer magnification, or null for fonts without a matrix.
         /// </summary>
         public static int? GetCellHeight(string fontName, int magnification, int printDensityDpmm)
@@ -157,26 +163,36 @@ namespace BinaryKits.Zpl.Viewer.Helpers
         /// substitutes (A–H) by character pitch. Scalable fonts are rasterized 1-bit (a dot is inked when its center
         /// lies inside the outline), like the printer's thermal head, instead of Labelary's antialiased edges.
         /// </summary>
-        public static SKFont CreateTextFont(SKTypeface typeface, float cellHeight, float scaleX, bool isScalable)
+        public static SKFont CreateTextFont(SKTypeface typeface, string fontName, float cellHeight, float scaleX)
         {
-            if (!isScalable)
+            if (!IsScalableFont(fontName))
             {
                 return CreateResidentFont(typeface, cellHeight, scaleX);
             }
 
-            SKFont font = CreateCapHeightFont(typeface, cellHeight * scalableEmRatio * scalableBaselineNumerator / scalableBaselineDenominator, scaleX);
+            // Triumvirate cap height is 3/4 em
+            float emHeight = matrixScalableFonts.TryGetValue(fontName, out MatrixScalableFont matrixFont) ?
+                matrixFont.EmHeight * cellHeight / matrixFont.Height :
+                cellHeight * scalableEmRatio;
+
+            SKFont font = CreateCapHeightFont(typeface, emHeight * scalableBaselineNumerator / scalableBaselineDenominator, scaleX);
             font.Edging = SKFontEdging.Alias;
 
             return font;
         }
 
         /// <summary>
-        /// Baseline below the cell top (<c>^FO</c> origin): 3 × HEIGHT / 4 in whole dots for scalable fonts, the cap height
-        /// of the substitute typeface for resident bitmap fonts.
+        /// Baseline below the cell top (<c>^FO</c> origin): 3 × HEIGHT / 4 in whole dots for font 0, the magnified
+        /// matrix baseline for P–V, the cap height of the substitute typeface for resident bitmap fonts.
         /// </summary>
-        public static float GetTextBaseline(SKFont font, float cellHeight, bool isScalable)
+        public static float GetTextBaseline(SKFont font, string fontName, float cellHeight)
         {
-            if (isScalable)
+            if (matrixScalableFonts.TryGetValue(fontName, out MatrixScalableFont matrixFont))
+            {
+                return matrixFont.Baseline * cellHeight / matrixFont.Height;
+            }
+
+            if (IsScalableFont(fontName))
             {
                 return MathF.Floor(cellHeight * scalableBaselineNumerator / scalableBaselineDenominator);
             }
@@ -184,6 +200,17 @@ namespace BinaryKits.Zpl.Viewer.Helpers
             font.MeasureText("X", out SKRect capBounds);
 
             return capBounds.Height;
+        }
+
+        /// <summary>
+        /// Line cell height of a <c>^FB</c> line (pitch without the line spacing): the cell height, except P–V, whose
+        /// lines drop the top of the matrix cell and keep its descent below the baseline.
+        /// </summary>
+        public static float GetFieldBlockCellHeight(string fontName, float cellHeight)
+        {
+            return matrixScalableFonts.TryGetValue(fontName, out MatrixScalableFont matrixFont) ?
+                matrixFont.FieldBlockLineHeight * cellHeight / matrixFont.Height :
+                cellHeight;
         }
 
         /// <summary>
@@ -240,6 +267,15 @@ namespace BinaryKits.Zpl.Viewer.Helpers
         /// </summary>
         public static (float cellHeight, float scaleX) GetFontScaling(string fontName, int fontHeight, int fontWidth, int printDensityDpmm)
         {
+            // P–V: an omitted axis stays 1× (Labelary: ^APN,40 doubles only the height)
+            if (matrixScalableFonts.TryGetValue(fontName, out MatrixScalableFont matrixFont))
+            {
+                int magnificationY = fontHeight > 0 ? GetMagnification(fontHeight, matrixFont.Height) : 1;
+                int magnificationX = fontWidth > 0 ? GetMagnification(fontWidth, matrixFont.Width) : 1;
+
+                return (matrixFont.Height * magnificationY, matrixFont.EmWidth * magnificationX / (matrixFont.EmHeight * magnificationY));
+            }
+
             (int height, int width)? fontScale = GetFontScale(fontName, printDensityDpmm);
 
             if (fontScale != null)

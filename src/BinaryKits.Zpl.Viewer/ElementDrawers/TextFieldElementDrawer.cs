@@ -72,12 +72,12 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
 
                 (float cellHeight, float scaleX) = FontScale.GetFontScaling(font.FontName, font.FontHeight, font.FontWidth, printDensityDpmm);
-                bool isScalable = IsFont0Compatible(font.FontName);
+                bool isScalable = FontScale.IsScalableFont(font.FontName);
 
                 string typefaceFontName = isScalable ? "0" : font.FontName;
                 SKTypeface typeface = options.FontManager.FontLoader(typefaceFontName);
 
-                using SKFont skFont = FontScale.CreateTextFont(typeface, cellHeight, scaleX, isScalable);
+                using SKFont skFont = FontScale.CreateTextFont(typeface, font.FontName, cellHeight, scaleX);
                 using SKPaint skPaint = new()
                 {
                     IsAntialias = options.Antialias
@@ -154,7 +154,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                     if (textField.FieldTypeset == null)
                     {
-                        y += FontScale.GetTextBaseline(skFont, cellHeight, isScalable);
+                        y += FontScale.GetTextBaseline(skFont, font.FontName, cellHeight);
                     }
 
                     if (textField.ReversePrint)
@@ -196,7 +196,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             ZplFont font = textField.Font;
-            if (IsFont0Compatible(font.FontName))
+            if (FontScale.IsScalableFont(font.FontName))
             {
                 return false;
             }
@@ -310,11 +310,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             return metrics.WithExpansion(expansionX, expansionY);
-        }
-
-        private static bool IsFont0Compatible(string fontName)
-        {
-            return fontName is "0" or "P" or "Q" or "R" or "S" or "T" or "U" or "V";
         }
 
         private static bool TryGetBitmapFontData(
