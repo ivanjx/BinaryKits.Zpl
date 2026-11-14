@@ -27,7 +27,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             {
                 float x = graphicSymbol.PositionX;
                 float y = graphicSymbol.PositionY;
-                FieldJustification fieldJustification = FieldJustification.None;
 
                 if (graphicSymbol.UseDefaultPosition)
                 {
@@ -63,6 +62,12 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 };
 
                 float totalWidth = skFont.MeasureText(displayText, out SKRect textBounds);
+                bool rightJustified = GetFieldJustification(graphicSymbol) == FieldJustification.Right;
+
+                if (graphicSymbol.FieldOrigin != null && rightJustified)
+                {
+                    x = GetRightJustifiedFieldOriginX(x, totalWidth, cellHeight, graphicSymbol.FieldOrientation);
+                }
 
                 using (new SKAutoCanvasRestore(this.skCanvas))
                 {
@@ -84,8 +89,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                             case FieldOrientation.Normal:
                                 break;
                         }
-
-                        fieldJustification = graphicSymbol.FieldOrigin.FieldJustification;
                     }
                     else
                     {
@@ -103,8 +106,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                             case FieldOrientation.Normal:
                                 break;
                         }
-
-                        fieldJustification = graphicSymbol.FieldTypeset.FieldJustification;
                     }
 
                     if (matrix != SKMatrix.Empty)
@@ -117,15 +118,10 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         y += cellHeight;
                     }
 
-                    SKTextAlign textAlign = SKTextAlign.Left;
-                    if (fieldJustification == FieldJustification.Left)
-                    {
-                        textAlign = SKTextAlign.Left;
-                    }
-                    else if (fieldJustification == FieldJustification.Right)
-                    {
-                        textAlign = SKTextAlign.Right;
-                    }
+                    // ^FT justifies along the text from its origin
+                    SKTextAlign textAlign = graphicSymbol.FieldOrigin == null && rightJustified ?
+                        SKTextAlign.Right :
+                        SKTextAlign.Left;
 
                     this.skCanvas.DrawText(displayText, x, y, textAlign, skFont, skPaint);
 
@@ -170,7 +166,12 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             float topY = graphicSymbol.FieldTypeset == null ?
                 y :
                 y - metrics.Baseline * metrics.ExpansionY;
-            FieldJustification fieldJustification;
+            bool rightJustified = GetFieldJustification(graphicSymbol) == FieldJustification.Right;
+
+            if (graphicSymbol.FieldOrigin != null && rightJustified)
+            {
+                x = GetRightJustifiedFieldOriginX(x, totalWidth, renderedHeight, graphicSymbol.FieldOrientation);
+            }
 
             using (new SKAutoCanvasRestore(this.skCanvas))
             {
@@ -192,8 +193,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         case FieldOrientation.Normal:
                             break;
                     }
-
-                    fieldJustification = graphicSymbol.FieldOrigin.FieldJustification;
                 }
                 else
                 {
@@ -211,8 +210,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         case FieldOrientation.Normal:
                             break;
                     }
-
-                    fieldJustification = graphicSymbol.FieldTypeset.FieldJustification;
                 }
 
                 if (matrix != SKMatrix.Empty)
@@ -220,7 +217,10 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     this.skCanvas.Concat(matrix);
                 }
 
-                float drawX = GetBitmapAlignedX(x, totalWidth, fieldJustification);
+                // ^FT justifies along the text from its origin
+                float drawX = graphicSymbol.FieldOrigin == null && rightJustified ?
+                    x - totalWidth :
+                    x;
 
                 using SKPaint paint = ZplBitmapFontRenderer.CreatePaint(false);
                 ZplBitmapFontRenderer renderer = new(this.skCanvas);
@@ -259,14 +259,11 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             return metrics.WithExpansion(expansionX, expansionY);
         }
 
-        private static float GetBitmapAlignedX(
-            float x,
-            int totalWidth,
-            FieldJustification fieldJustification)
+        private static FieldJustification GetFieldJustification(ZplGraphicSymbol graphicSymbol)
         {
-            return fieldJustification == FieldJustification.Right ?
-                x - totalWidth :
-                x;
+            return graphicSymbol.FieldOrigin != null ?
+                graphicSymbol.FieldOrigin.FieldJustification :
+                graphicSymbol.FieldTypeset.FieldJustification;
         }
 
     }

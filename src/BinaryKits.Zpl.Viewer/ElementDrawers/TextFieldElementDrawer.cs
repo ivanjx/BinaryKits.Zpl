@@ -40,7 +40,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             {
                 float x = textField.PositionX;
                 float y = textField.PositionY;
-                FieldJustification fieldJustification = FieldJustification.None;
 
                 if (textField.UseDefaultPosition)
                 {
@@ -99,6 +98,16 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 float totalWidth = skFont.MeasureShapedText(displayText, out SKRect textBounds);
 
+                FieldJustification fieldJustification = textField.FieldOrigin != null ?
+                    textField.FieldOrigin.FieldJustification :
+                    textField.FieldTypeset.FieldJustification;
+                bool rightJustified = IsRightJustified(displayText, fieldJustification);
+
+                if (textField.FieldOrigin != null && rightJustified)
+                {
+                    x = GetRightJustifiedFieldOriginX(x, totalWidth, cellHeight, textField.Font.FieldOrientation);
+                }
+
                 using (new SKAutoCanvasRestore(this.skCanvas))
                 {
                     SKMatrix matrix = SKMatrix.Empty;
@@ -119,8 +128,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                             case FieldOrientation.Normal:
                                 break;
                         }
-
-                        fieldJustification = textField.FieldOrigin.FieldJustification;
                     }
                     else
                     {
@@ -138,8 +145,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                             case FieldOrientation.Normal:
                                 break;
                         }
-
-                        fieldJustification = textField.FieldTypeset.FieldJustification;
                     }
 
                     if (matrix != SKMatrix.Empty)
@@ -157,25 +162,10 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         skPaint.BlendMode = SKBlendMode.Xor;
                     }
 
-                    SKTextAlign textAlign = SKTextAlign.Left;
-                    if (fieldJustification == FieldJustification.Left)
-                    {
-                        textAlign = SKTextAlign.Left;
-                    }
-                    else if (fieldJustification == FieldJustification.Right)
-                    {
-                        textAlign = SKTextAlign.Right;
-                    }
-                    else if (fieldJustification == FieldJustification.Auto)
-                    {
-                        HarfBuzzSharp.Buffer buffer = new();
-                        buffer.AddUtf16(displayText);
-                        buffer.GuessSegmentProperties();
-                        if (buffer.Direction == HarfBuzzSharp.Direction.RightToLeft)
-                        {
-                            textAlign = SKTextAlign.Right;
-                        }
-                    }
+                    // ^FT justifies along the text from its origin
+                    SKTextAlign textAlign = textField.FieldOrigin == null && rightJustified ?
+                        SKTextAlign.Right :
+                        SKTextAlign.Left;
 
                     this.skCanvas.DrawShapedTextSafe(displayText, x, y, textAlign, skFont, skPaint);
 
@@ -227,7 +217,14 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             float topY = textField.FieldTypeset == null ?
                 y :
                 y - metrics.Baseline * metrics.ExpansionY;
-            FieldJustification fieldJustification;
+            bool rightJustified = IsRightJustified(displayText, textField.FieldOrigin != null ?
+                textField.FieldOrigin.FieldJustification :
+                textField.FieldTypeset.FieldJustification);
+
+            if (textField.FieldOrigin != null && rightJustified)
+            {
+                x = GetRightJustifiedFieldOriginX(x, totalWidth, renderedHeight, textField.Font.FieldOrientation);
+            }
 
             using (new SKAutoCanvasRestore(this.skCanvas))
             {
@@ -249,8 +246,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         case FieldOrientation.Normal:
                             break;
                     }
-
-                    fieldJustification = textField.FieldOrigin.FieldJustification;
                 }
                 else
                 {
@@ -268,8 +263,6 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         case FieldOrientation.Normal:
                             break;
                     }
-
-                    fieldJustification = textField.FieldTypeset.FieldJustification;
                 }
 
                 if (matrix != SKMatrix.Empty)
@@ -277,7 +270,10 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     this.skCanvas.Concat(matrix);
                 }
 
-                float drawX = GetBitmapAlignedX(displayText, x, totalWidth, fieldJustification);
+                // ^FT justifies along the text from its origin
+                float drawX = textField.FieldOrigin == null && rightJustified ?
+                    x - totalWidth :
+                    x;
 
                 using SKPaint paint = ZplBitmapFontRenderer.CreatePaint(textField.ReversePrint);
                 ZplBitmapFontRenderer renderer = new(this.skCanvas);
@@ -347,23 +343,10 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 out fontData);
         }
 
-        private static float GetBitmapAlignedX(
-            string displayText,
-            float x,
-            int totalWidth,
-            FieldJustification fieldJustification)
+        private static bool IsRightJustified(string displayText, FieldJustification fieldJustification)
         {
-            if (fieldJustification == FieldJustification.Right)
-            {
-                return x - totalWidth;
-            }
-
-            if (fieldJustification == FieldJustification.Auto && IsRightToLeft(displayText))
-            {
-                return x - totalWidth;
-            }
-
-            return x;
+            return fieldJustification == FieldJustification.Right ||
+                (fieldJustification == FieldJustification.Auto && IsRightToLeft(displayText));
         }
 
         private static bool IsRightToLeft(string text)

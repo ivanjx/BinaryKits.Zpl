@@ -92,5 +92,17 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             return currentPosition;
         }
 
+        /// <summary>
+        /// Position of a right-justified ^FO field drawn like a left-justified one: the rotated field box ends at x.
+        /// The box is <paramref name="boxWidth"/> along the text and <paramref name="boxHeight"/> across it, so N and I
+        /// move left by the width, R and B by the height (Labelary; ^FT justifies along the text instead).
+        /// </summary>
+        protected static float GetRightJustifiedFieldOriginX(float x, float boxWidth, float boxHeight, Label.FieldOrientation fieldOrientation)
+        {
+            return fieldOrientation is Label.FieldOrientation.Rotated90 or Label.FieldOrientation.Rotated270 ?
+                x - boxHeight :
+                x - boxWidth;
+        }
+
     }
 }
