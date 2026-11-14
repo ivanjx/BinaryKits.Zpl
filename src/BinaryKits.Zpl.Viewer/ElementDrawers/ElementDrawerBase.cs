@@ -104,5 +104,46 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 x - boxWidth;
         }
 
+        /// <summary>
+        /// Rotation of a field drawn unrotated at (<paramref name="x"/>, <paramref name="y"/>): ^FO places the rotated
+        /// field box (<paramref name="boxWidth"/> along the text, <paramref name="boxHeight"/> across it) with its
+        /// top-left corner at (x, y), ^FT rotates around (x, y). <see cref="SKMatrix.Empty"/> for N.
+        /// </summary>
+        protected static SKMatrix CreateFieldRotationMatrix(
+            Label.FieldOrientation fieldOrientation,
+            bool useFieldOrigin,
+            float x,
+            float y,
+            float boxWidth,
+            float boxHeight)
+        {
+            if (useFieldOrigin)
+            {
+                switch (fieldOrientation)
+                {
+                    case Label.FieldOrientation.Rotated90:
+                        return SKMatrix.CreateRotationDegrees(90, x + boxHeight / 2, y + boxHeight / 2);
+                    case Label.FieldOrientation.Rotated180:
+                        return SKMatrix.CreateRotationDegrees(180, x + boxWidth / 2, y + boxHeight / 2);
+                    case Label.FieldOrientation.Rotated270:
+                        return SKMatrix.CreateRotationDegrees(270, x + boxWidth / 2, y + boxWidth / 2);
+                    default:
+                        return SKMatrix.Empty;
+                }
+            }
+
+            switch (fieldOrientation)
+            {
+                case Label.FieldOrientation.Rotated90:
+                    return SKMatrix.CreateRotationDegrees(90, x, y);
+                case Label.FieldOrientation.Rotated180:
+                    return SKMatrix.CreateRotationDegrees(180, x, y);
+                case Label.FieldOrientation.Rotated270:
+                    return SKMatrix.CreateRotationDegrees(270, x, y);
+                default:
+                    return SKMatrix.Empty;
+            }
+        }
+
     }
 }

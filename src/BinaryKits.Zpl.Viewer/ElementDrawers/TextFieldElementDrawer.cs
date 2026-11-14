@@ -6,6 +6,9 @@ using BinaryKits.Zpl.Viewer.Helpers;
 using SkiaSharp;
 
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 
 namespace BinaryKits.Zpl.Viewer.ElementDrawers
 {
@@ -96,56 +99,46 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     }
                 }
 
-                float totalWidth = skFont.MeasureShapedText(displayText, out SKRect textBounds);
+                FieldDirection fieldDirection = textField.FieldDirection;
+                float characterGap = textField.CharacterGap;
+
+                // Characters of V (one per row) and R (reversed order) fields
+                List<string> characters = null;
+                if (fieldDirection != FieldDirection.Horizontal)
+                {
+                    characters = GetTextElements(displayText);
+
+                    if (fieldDirection == FieldDirection.Reverse)
+                    {
+                        characters.Reverse();
+                        displayText = string.Concat(characters);
+                    }
+                }
+
+                float totalWidth = skFont.MeasureShapedText(displayText, characterGap, out SKRect textBounds);
 
                 FieldJustification fieldJustification = textField.FieldOrigin != null ?
                     textField.FieldOrigin.FieldJustification :
                     textField.FieldTypeset.FieldJustification;
                 bool rightJustified = IsRightJustified(displayText, fieldJustification);
 
+                (float boxWidth, float boxHeight) = fieldDirection switch
+                {
+                    FieldDirection.Vertical => (cellHeight, GetVerticalFieldHeight(characters.Count, cellHeight, characterGap)),
+                    FieldDirection.Reverse => (skFont.MeasureShapedText("W"), cellHeight),
+                    _ => (totalWidth, cellHeight)
+                };
+
                 if (textField.FieldOrigin != null && rightJustified)
                 {
-                    x = GetRightJustifiedFieldOriginX(x, totalWidth, cellHeight, textField.Font.FieldOrientation);
+                    x = GetRightJustifiedFieldOriginX(x, boxWidth, boxHeight, textField.Font.FieldOrientation);
                 }
+
+                float textOffsetX = GetTextOffsetX(fieldDirection, textField.FieldOrigin != null, rightJustified, totalWidth, boxWidth);
 
                 using (new SKAutoCanvasRestore(this.skCanvas))
                 {
-                    SKMatrix matrix = SKMatrix.Empty;
-
-                    if (textField.FieldOrigin != null)
-                    {
-                        switch (textField.Font.FieldOrientation)
-                        {
-                            case FieldOrientation.Rotated90:
-                                matrix = SKMatrix.CreateRotationDegrees(90, x + cellHeight / 2, y + cellHeight / 2);
-                                break;
-                            case FieldOrientation.Rotated180:
-                                matrix = SKMatrix.CreateRotationDegrees(180, x + totalWidth / 2, y + cellHeight / 2);
-                                break;
-                            case FieldOrientation.Rotated270:
-                                matrix = SKMatrix.CreateRotationDegrees(270, x + totalWidth / 2, y + totalWidth / 2);
-                                break;
-                            case FieldOrientation.Normal:
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        switch (textField.Font.FieldOrientation)
-                        {
-                            case FieldOrientation.Rotated90:
-                                matrix = SKMatrix.CreateRotationDegrees(90, x, y);
-                                break;
-                            case FieldOrientation.Rotated180:
-                                matrix = SKMatrix.CreateRotationDegrees(180, x, y);
-                                break;
-                            case FieldOrientation.Rotated270:
-                                matrix = SKMatrix.CreateRotationDegrees(270, x, y);
-                                break;
-                            case FieldOrientation.Normal:
-                                break;
-                        }
-                    }
+                    SKMatrix matrix = CreateFieldRotationMatrix(textField.Font.FieldOrientation, textField.FieldOrigin != null, x, y, boxWidth, boxHeight);
 
                     if (matrix != SKMatrix.Empty)
                     {
@@ -162,15 +155,22 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                         skPaint.BlendMode = SKBlendMode.Xor;
                     }
 
-                    // ^FT justifies along the text from its origin
-                    SKTextAlign textAlign = textField.FieldOrigin == null && rightJustified ?
-                        SKTextAlign.Right :
-                        SKTextAlign.Left;
-
-                    this.skCanvas.DrawShapedTextSafe(displayText, x, y, textAlign, skFont, skPaint);
+                    if (fieldDirection == FieldDirection.Vertical)
+                    {
+                        // One character per cell row, left-aligned in the column (Labelary)
+                        for (int i = 0; i < characters.Count; i++)
+                        {
+                            this.skCanvas.DrawShapedTextSafe(characters[i], x + textOffsetX, y + i * (cellHeight + characterGap), SKTextAlign.Left, skFont, skPaint);
+                        }
+                    }
+                    else
+                    {
+                        this.skCanvas.DrawShapedTextSafe(displayText, x + textOffsetX, y, SKTextAlign.Left, skFont, skPaint, characterGap);
+                    }
 
                     // Update the next default field position after rendering
-                    return this.CalculateNextDefaultPosition(x, y, totalWidth, textBounds.Height, false, textField.Font.FieldOrientation, currentPosition);
+                    float advance = fieldDirection == FieldDirection.Vertical ? boxWidth : totalWidth;
+                    return this.CalculateNextDefaultPosition(x, y, advance, textBounds.Height, false, textField.Font.FieldOrientation, currentPosition);
                 }
             }
 
@@ -212,7 +212,23 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             ZplBitmapFontMetrics metrics = CreateExpandedMetrics(fontData.Metrics, font.FontHeight, font.FontWidth);
-            int totalWidth = ZplBitmapFontRenderer.MeasureTextWidth(displayText, metrics);
+            FieldDirection fieldDirection = textField.FieldDirection;
+            int characterGap = textField.CharacterGap;
+
+            // Characters of V (one per row) and R (reversed order) fields
+            List<string> characters = null;
+            if (fieldDirection != FieldDirection.Horizontal)
+            {
+                characters = [.. displayText.EnumerateRunes().Select(rune => rune.ToString())];
+
+                if (fieldDirection == FieldDirection.Reverse)
+                {
+                    characters.Reverse();
+                    displayText = string.Concat(characters);
+                }
+            }
+
+            int totalWidth = ZplBitmapFontRenderer.MeasureTextWidth(displayText, metrics, characterGap);
             float renderedHeight = metrics.RenderedGlyphHeight;
             float topY = textField.FieldTypeset == null ?
                 y :
@@ -221,68 +237,48 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 textField.FieldOrigin.FieldJustification :
                 textField.FieldTypeset.FieldJustification);
 
+            (float boxWidth, float boxHeight) = fieldDirection switch
+            {
+                FieldDirection.Vertical => (renderedHeight, GetVerticalFieldHeight(characters.Count, renderedHeight, characterGap)),
+                FieldDirection.Reverse => (metrics.Advance, renderedHeight),
+                _ => (totalWidth, renderedHeight)
+            };
+
             if (textField.FieldOrigin != null && rightJustified)
             {
-                x = GetRightJustifiedFieldOriginX(x, totalWidth, renderedHeight, textField.Font.FieldOrientation);
+                x = GetRightJustifiedFieldOriginX(x, boxWidth, boxHeight, textField.Font.FieldOrientation);
             }
 
             using (new SKAutoCanvasRestore(this.skCanvas))
             {
-                SKMatrix matrix = SKMatrix.Empty;
-
-                if (textField.FieldOrigin != null)
-                {
-                    switch (textField.Font.FieldOrientation)
-                    {
-                        case FieldOrientation.Rotated90:
-                            matrix = SKMatrix.CreateRotationDegrees(90, x + renderedHeight / 2, y + renderedHeight / 2);
-                            break;
-                        case FieldOrientation.Rotated180:
-                            matrix = SKMatrix.CreateRotationDegrees(180, x + totalWidth / 2f, y + renderedHeight / 2);
-                            break;
-                        case FieldOrientation.Rotated270:
-                            matrix = SKMatrix.CreateRotationDegrees(270, x + totalWidth / 2f, y + totalWidth / 2f);
-                            break;
-                        case FieldOrientation.Normal:
-                            break;
-                    }
-                }
-                else
-                {
-                    switch (textField.Font.FieldOrientation)
-                    {
-                        case FieldOrientation.Rotated90:
-                            matrix = SKMatrix.CreateRotationDegrees(90, x, y);
-                            break;
-                        case FieldOrientation.Rotated180:
-                            matrix = SKMatrix.CreateRotationDegrees(180, x, y);
-                            break;
-                        case FieldOrientation.Rotated270:
-                            matrix = SKMatrix.CreateRotationDegrees(270, x, y);
-                            break;
-                        case FieldOrientation.Normal:
-                            break;
-                    }
-                }
+                SKMatrix matrix = CreateFieldRotationMatrix(textField.Font.FieldOrientation, textField.FieldOrigin != null, x, y, boxWidth, boxHeight);
 
                 if (matrix != SKMatrix.Empty)
                 {
                     this.skCanvas.Concat(matrix);
                 }
 
-                // ^FT justifies along the text from its origin
-                float drawX = textField.FieldOrigin == null && rightJustified ?
-                    x - totalWidth :
-                    x;
+                float drawX = x + GetTextOffsetX(fieldDirection, textField.FieldOrigin != null, rightJustified, totalWidth, boxWidth);
 
                 using SKPaint paint = ZplBitmapFontRenderer.CreatePaint(textField.ReversePrint);
                 ZplBitmapFontRenderer renderer = new(this.skCanvas);
-                renderer.DrawText(displayText, fontData, metrics, drawX, topY, paint);
+
+                if (fieldDirection == FieldDirection.Vertical)
+                {
+                    for (int i = 0; i < characters.Count; i++)
+                    {
+                        renderer.DrawText(characters[i], fontData, metrics, drawX, topY + i * (renderedHeight + characterGap), paint);
+                    }
+                }
+                else
+                {
+                    renderer.DrawText(displayText, fontData, metrics, drawX, topY, paint, characterGap);
+                }
 
                 nextPosition = this.CalculateNextDefaultPosition(
                     x,
                     textField.FieldTypeset == null ? y + renderedHeight : y,
-                    totalWidth,
+                    fieldDirection == FieldDirection.Vertical ? boxWidth : totalWidth,
                     renderedHeight,
                     false,
                     textField.Font.FieldOrientation,
@@ -292,7 +288,54 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             return true;
         }
 
-        private static ZplBitmapFontMetrics CreateExpandedMetrics(
+        /// <summary>
+        /// Height of a V field: one cell row per character, the gap between rows.
+        /// </summary>
+        private static float GetVerticalFieldHeight(int characterCount, float cellHeight, float characterGap)
+        {
+            return characterCount <= 0 ?
+                cellHeight :
+                characterCount * cellHeight + (characterCount - 1) * characterGap;
+        }
+
+        /// <summary>
+        /// Start of the text along the unrotated field, relative to the (right-justification shifted) origin.
+        /// ^FT justifies along the text from its origin. Labelary anchors R fields on one W cell
+        /// (<paramref name="boxWidth"/>): the reversed text ends that far right of x, right-justified it starts that
+        /// far left of x. Right-justified ^FT V columns end at x.
+        /// </summary>
+        private static float GetTextOffsetX(FieldDirection fieldDirection, bool useFieldOrigin, bool rightJustified, float textWidth, float boxWidth)
+        {
+            switch (fieldDirection)
+            {
+                case FieldDirection.Reverse:
+                    if (!rightJustified)
+                    {
+                        return boxWidth - textWidth;
+                    }
+
+                    return useFieldOrigin ? 0 : -boxWidth;
+                case FieldDirection.Vertical:
+                    return !useFieldOrigin && rightJustified ? -boxWidth : 0;
+                default:
+                    return !useFieldOrigin && rightJustified ? -textWidth : 0;
+            }
+        }
+
+        private static List<string> GetTextElements(string text)
+        {
+            List<string> elements = [];
+            TextElementEnumerator enumerator = StringInfo.GetTextElementEnumerator(text);
+
+            while (enumerator.MoveNext())
+            {
+                elements.Add(enumerator.GetTextElement());
+            }
+
+            return elements;
+        }
+
+        protected static ZplBitmapFontMetrics CreateExpandedMetrics(
             ZplBitmapFontMetrics metrics,
             int fontHeight,
             int fontWidth)
@@ -312,7 +355,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             return metrics.WithExpansion(expansionX, expansionY);
         }
 
-        private static bool TryGetBitmapFontData(
+        protected static bool TryGetBitmapFontData(
             DrawerOptions options,
             string fontName,
             int printDensityDpmm,
@@ -338,7 +381,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 out fontData);
         }
 
-        private static bool IsRightJustified(string displayText, FieldJustification fieldJustification)
+        protected static bool IsRightJustified(string displayText, FieldJustification fieldJustification)
         {
             return fieldJustification == FieldJustification.Right ||
                 (fieldJustification == FieldJustification.Auto && IsRightToLeft(displayText));

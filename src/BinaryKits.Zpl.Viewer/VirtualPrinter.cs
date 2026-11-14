@@ -11,6 +11,7 @@ namespace BinaryKits.Zpl.Viewer
         public LabelPosition NextElementPosition { get; private set; }
         public FieldDataBase NextElementFieldData { get; private set; }
         public FieldBlock NextElementFieldBlock { get; private set; }
+        public TextBlock NextElementTextBlock { get; private set; }
         public FieldOrientation FieldOrientation { get; private set; } = FieldOrientation.Normal;
         public FieldJustification FieldJustification { get; private set; } = FieldJustification.None;
         public int FontWidth { get; private set; }
@@ -26,6 +27,8 @@ namespace BinaryKits.Zpl.Viewer
         public bool NextElementFieldReverse { get; private set; }
         public char? NextElementFieldHexadecimalIndicator { get; private set; }
         public FieldJustification NextElementFieldJustification { get; private set; } = FieldJustification.None;
+        public FieldDirection NextElementFieldDirection { get; private set; } = FieldDirection.Horizontal;
+        public int NextElementCharacterGap { get; private set; }
         public bool LabelReverse { get; private set; }
         public BarcodeInfo BarcodeInfo { get; private set; }
 
@@ -66,6 +69,16 @@ namespace BinaryKits.Zpl.Viewer
         public void ClearNextElementFieldBlock()
         {
             this.NextElementFieldBlock = null;
+        }
+
+        public void SetNextElementTextBlock(TextBlock textBlock)
+        {
+            this.NextElementTextBlock = textBlock;
+        }
+
+        public void ClearNextElementTextBlock()
+        {
+            this.NextElementTextBlock = null;
         }
 
         public void SetNextFont(
@@ -110,6 +123,18 @@ namespace BinaryKits.Zpl.Viewer
         public void ClearNextElementFieldJustification()
         {
             this.NextElementFieldJustification = FieldJustification.None;
+        }
+
+        public void SetNextElementFieldParameter(FieldDirection fieldDirection, int characterGap)
+        {
+            this.NextElementFieldDirection = fieldDirection;
+            this.NextElementCharacterGap = characterGap;
+        }
+
+        public void ClearNextElementFieldParameter()
+        {
+            this.NextElementFieldDirection = FieldDirection.Horizontal;
+            this.NextElementCharacterGap = 0;
         }
 
         public void SetLabelReverse(bool reverse)

@@ -56,6 +56,7 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 hangingIndentOfTheSecondAndRemainingLines = tmpint;
             }
 
+            virtualPrinter.ClearNextElementTextBlock();
             virtualPrinter.SetNextElementFieldBlock(new FieldBlock
             {
                 WidthOfTextBlockLine = widthOfTextBlockLine,

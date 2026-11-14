@@ -22,6 +22,9 @@ namespace BinaryKits.Zpl.Viewer.Helpers
 
         private static readonly ConditionalWeakTable<SKTypeface, ShapingFont> shapingFonts = new();
 
+        /// <summary>
+        /// Draws shaped text; <paramref name="characterGap"/> dots are added after every character (^FP).
+        /// </summary>
         public static void DrawShapedTextSafe(
             this SKCanvas canvas,
             string text,
@@ -29,17 +32,23 @@ namespace BinaryKits.Zpl.Viewer.Helpers
             float y,
             SKTextAlign textAlign,
             SKFont font,
-            SKPaint paint)
+            SKPaint paint,
+            float characterGap = 0)
         {
             if (string.IsNullOrEmpty(text))
             {
                 return;
             }
 
-            if (!TryShapeText(text, font, out ushort[] glyphs, out SKPoint[] positions, out float width))
+            if (!TryShapeText(text, font, characterGap, out ushort[] glyphs, out SKPoint[] positions, out float width))
             {
-                canvas.DrawText(text, x, y, textAlign, font, paint);
-                return;
+                if (characterGap == 0)
+                {
+                    canvas.DrawText(text, x, y, textAlign, font, paint);
+                    return;
+                }
+
+                GetUnshapedGlyphs(text, font, characterGap, out glyphs, out positions, out width);
             }
 
             float alignOffset = textAlign switch
@@ -63,7 +72,7 @@ namespace BinaryKits.Zpl.Viewer.Helpers
         /// </summary>
         public static float MeasureShapedText(this SKFont font, string text)
         {
-            return font.MeasureShapedText(text, out _);
+            return font.MeasureShapedText(text, 0, out _);
         }
 
         /// <summary>
@@ -72,6 +81,15 @@ namespace BinaryKits.Zpl.Viewer.Helpers
         /// </summary>
         public static float MeasureShapedText(this SKFont font, string text, out SKRect bounds)
         {
+            return font.MeasureShapedText(text, 0, out bounds);
+        }
+
+        /// <summary>
+        /// Advance width, including the gap after the last character, and ink bounds (relative to the origin and
+        /// baseline) of the shaped text drawn with <paramref name="characterGap"/> dots after every character.
+        /// </summary>
+        public static float MeasureShapedText(this SKFont font, string text, float characterGap, out SKRect bounds)
+        {
             bounds = SKRect.Empty;
 
             if (string.IsNullOrEmpty(text))
@@ -79,9 +97,14 @@ namespace BinaryKits.Zpl.Viewer.Helpers
                 return 0;
             }
 
-            if (!TryShapeText(text, font, out ushort[] glyphs, out SKPoint[] positions, out float width))
+            if (!TryShapeText(text, font, characterGap, out ushort[] glyphs, out SKPoint[] positions, out float width))
             {
-                return font.MeasureText(text, out bounds);
+                if (characterGap == 0)
+                {
+                    return font.MeasureText(text, out bounds);
+                }
+
+                GetUnshapedGlyphs(text, font, characterGap, out glyphs, out positions, out width);
             }
 
             font.GetGlyphWidths(glyphs, out SKRect[] glyphBounds, null);
@@ -101,9 +124,33 @@ namespace BinaryKits.Zpl.Viewer.Helpers
             return width;
         }
 
+        /// <summary>
+        /// Glyphs of a typeface without font data at their plain advances plus <paramref name="characterGap"/>.
+        /// </summary>
+        private static void GetUnshapedGlyphs(
+            string text,
+            SKFont font,
+            float characterGap,
+            out ushort[] glyphs,
+            out SKPoint[] positions,
+            out float width)
+        {
+            glyphs = font.GetGlyphs(text);
+            float[] advances = font.GetGlyphWidths(glyphs);
+            positions = new SKPoint[glyphs.Length];
+            width = 0;
+
+            for (int i = 0; i < glyphs.Length; i++)
+            {
+                positions[i] = new SKPoint(width, 0);
+                width += advances[i] + characterGap;
+            }
+        }
+
         private static bool TryShapeText(
             string text,
             SKFont font,
+            float characterGap,
             out ushort[] glyphs,
             out SKPoint[] positions,
             out float width)
@@ -149,6 +196,13 @@ namespace BinaryKits.Zpl.Viewer.Helpers
 
                 penX += glyphPositions[i].XAdvance * scaleX;
                 penY += glyphPositions[i].YAdvance * scaleY;
+
+                // The gap follows the last glyph of every character (cluster)
+                if (characterGap != 0 &&
+                    (i == glyphInfos.Length - 1 || glyphInfos[i + 1].Cluster != glyphInfos[i].Cluster))
+                {
+                    penX += characterGap;
+                }
             }
 
             width = penX;

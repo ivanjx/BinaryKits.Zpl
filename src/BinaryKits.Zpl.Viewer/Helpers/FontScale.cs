@@ -143,6 +143,16 @@ namespace BinaryKits.Zpl.Viewer.Helpers
         private const float residentPitchRatio = 2.0f / 3.0f;
 
         /// <summary>
+        /// ^TB line pitch of the scalable fonts as a fraction of the cell height (Labelary, font 0 at 10–150 dots).
+        /// </summary>
+        private const double textBlockScalableLinePitchRatio = 1.26;
+
+        /// <summary>
+        /// ^TB line pitch of fonts A–D as a fraction of the cell height (Labelary: A 9 → 9.5, D 18 → 19 dots).
+        /// </summary>
+        private const double textBlockResidentLinePitchRatio = 19.0 / 18.0;
+
+        /// <summary>
         /// Fonts drawn with the scalable font 0 typeface: font 0 and the resident fonts P–V.
         /// </summary>
         public static bool IsScalableFont(string fontName)
@@ -211,6 +221,28 @@ namespace BinaryKits.Zpl.Viewer.Helpers
             return matrixScalableFonts.TryGetValue(fontName, out MatrixScalableFont matrixFont) ?
                 matrixFont.FieldBlockLineHeight * cellHeight / matrixFont.Height :
                 cellHeight;
+        }
+
+        /// <summary>
+        /// Top of line <paramref name="lineIndex"/> of a <c>^TB</c> text block below the first line, in whole dots
+        /// (half away from zero), for a cell <paramref name="cellHeight"/> dots high. Labelary pitch (the Zebra
+        /// documentation leaves it open): 1.26 × the cell for the scalable fonts (0, P–V), 19/18 × the cell for A–D,
+        /// the cell for the other fonts.
+        /// </summary>
+        public static float GetTextBlockLineOffset(string fontName, float cellHeight, int lineIndex)
+        {
+            double pitchRatio = 1;
+
+            if (IsScalableFont(fontName))
+            {
+                pitchRatio = textBlockScalableLinePitchRatio;
+            }
+            else if (fontName is "A" or "B" or "C" or "D")
+            {
+                pitchRatio = textBlockResidentLinePitchRatio;
+            }
+
+            return (float)Math.Round(lineIndex * pitchRatio * cellHeight, MidpointRounding.AwayFromZero);
         }
 
         /// <summary>

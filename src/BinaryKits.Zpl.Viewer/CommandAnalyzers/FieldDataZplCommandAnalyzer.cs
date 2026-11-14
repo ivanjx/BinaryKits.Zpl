@@ -158,7 +158,15 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 return new ZplFieldBlock(text, x, y, width, font, maxLineCount, lineSpace, textJustification, hangingIndent, hexadecimalIndicator: hexadecimalIndicator, reversePrint: reversePrint, bottomToTop: bottomToTop, useDefaultPosition: useDefaultPosition);
             }
 
-            return new ZplTextField(text, x, y, font, hexadecimalIndicator: hexadecimalIndicator, reversePrint: reversePrint, bottomToTop: bottomToTop, fieldJustification: fieldJustification, useDefaultPosition: useDefaultPosition);
+            if (virtualPrinter.NextElementTextBlock != null)
+            {
+                int width = virtualPrinter.NextElementTextBlock.Width;
+                int height = virtualPrinter.NextElementTextBlock.Height;
+
+                return new ZplTextBlock(text, x, y, width, height, font, hexadecimalIndicator: hexadecimalIndicator, reversePrint: reversePrint, bottomToTop: bottomToTop, useDefaultPosition: useDefaultPosition, fieldJustification: fieldJustification);
+            }
+
+            return new ZplTextField(text, x, y, font, hexadecimalIndicator: hexadecimalIndicator, reversePrint: reversePrint, bottomToTop: bottomToTop, fieldJustification: fieldJustification, useDefaultPosition: useDefaultPosition, fieldDirection: virtualPrinter.NextElementFieldDirection, characterGap: virtualPrinter.NextElementCharacterGap);
         }
 
         private (ErrorCorrectionLevel, string) ParseQrCodeFieldData(QrCodeBarcodeFieldData qrCode, string text)

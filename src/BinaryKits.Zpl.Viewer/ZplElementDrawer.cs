@@ -45,6 +45,7 @@ namespace BinaryKits.Zpl.Viewer
             new QrCodeElementDrawer(),
             new RecallGraphicElementDrawer(),
             new TextFieldElementDrawer(),
+            new TextBlockElementDrawer(),
             new BarcodeAnsiCodabarElementDrawer(),
             new BarcodeMsiElementDrawer(),
             new BarcodeLogmarsElementDrawer()

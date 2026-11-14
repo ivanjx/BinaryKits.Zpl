@@ -18,6 +18,10 @@ namespace BinaryKits.Zpl.Label.Elements
         public NewLineConversionMethod NewLineConversion { get; protected set; }
         //^FD
         public string Text { get; protected set; }
+        //^FP
+        public FieldDirection FieldDirection { get; protected set; }
+        //^FP additional inter-character gap in dots
+        public int CharacterGap { get; protected set; }
 
         /// <summary>
         /// Construct a ^FD (Field Data) element, together with the ^FO, ^A and ^FH.
@@ -33,6 +37,8 @@ namespace BinaryKits.Zpl.Label.Elements
         /// <param name="bottomToTop"></param>
         /// <param name="fieldJustification"></param>
         /// <param name="useDefaultPosition"></param>
+        /// <param name="fieldDirection">^FP direction</param>
+        /// <param name="characterGap">^FP additional inter-character gap in dots</param>
         public ZplTextField(
             string text,
             int positionX,
@@ -43,7 +49,9 @@ namespace BinaryKits.Zpl.Label.Elements
             bool reversePrint = false,
             bool bottomToTop = false,
             bool useDefaultPosition = false,
-            FieldJustification fieldJustification = FieldJustification.None)
+            FieldJustification fieldJustification = FieldJustification.None,
+            FieldDirection fieldDirection = FieldDirection.Horizontal,
+            int characterGap = 0)
             : base(positionX, positionY, bottomToTop, useDefaultPosition, fieldJustification)
         {
             Text = text;
@@ -51,6 +59,8 @@ namespace BinaryKits.Zpl.Label.Elements
             HexadecimalIndicator = hexadecimalIndicator;
             NewLineConversion = newLineConversion;
             ReversePrint = reversePrint;
+            FieldDirection = fieldDirection;
+            CharacterGap = characterGap;
         }
 
         ///<inheritdoc/>
@@ -59,9 +69,29 @@ namespace BinaryKits.Zpl.Label.Elements
             List<string> result = new List<string>();
             result.AddRange(Font.Render(context));
             result.AddRange(RenderPosition(context));
+
+            if (FieldDirection != FieldDirection.Horizontal || CharacterGap != 0)
+            {
+                result.Add($"^FP{RenderFieldDirection(FieldDirection)},{context.Scale(CharacterGap)}");
+            }
+
             result.Add(RenderFieldDataSection());
 
             return result;
+        }
+
+        private static string RenderFieldDirection(FieldDirection fieldDirection)
+        {
+            switch (fieldDirection)
+            {
+                case FieldDirection.Vertical:
+                    return "V";
+                case FieldDirection.Reverse:
+                    return "R";
+                case FieldDirection.Horizontal:
+                default:
+                    return "H";
+            }
         }
 
         protected string RenderFieldDataSection()

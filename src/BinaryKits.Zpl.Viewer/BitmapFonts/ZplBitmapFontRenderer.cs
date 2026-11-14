@@ -14,7 +14,10 @@ namespace BinaryKits.Zpl.Viewer.BitmapFonts
             this.canvas = canvas ?? throw new ArgumentNullException(nameof(canvas));
         }
 
-        public static int MeasureTextWidth(string text, ZplBitmapFontMetrics metrics)
+        /// <summary>
+        /// Width of the text: every character advances by the font advance plus <paramref name="characterGap"/> (^FP).
+        /// </summary>
+        public static int MeasureTextWidth(string text, ZplBitmapFontMetrics metrics, int characterGap = 0)
         {
             ArgumentNullException.ThrowIfNull(metrics);
 
@@ -26,7 +29,7 @@ namespace BinaryKits.Zpl.Viewer.BitmapFonts
             int width = 0;
             foreach (Rune _ in text.EnumerateRunes())
             {
-                width += metrics.Advance;
+                width += metrics.Advance + characterGap;
             }
 
             return width;
@@ -44,13 +47,18 @@ namespace BinaryKits.Zpl.Viewer.BitmapFonts
             };
         }
 
+        /// <summary>
+        /// Draws the text with its top-left at (<paramref name="x"/>, <paramref name="y"/>); every character advances
+        /// by the font advance plus <paramref name="characterGap"/> (^FP). Returns the advanced width.
+        /// </summary>
         public int DrawText(
             string text,
             ZplBitmapFontData fontData,
             ZplBitmapFontMetrics metrics,
             float x,
             float y,
-            SKPaint paint)
+            SKPaint paint,
+            int characterGap = 0)
         {
             ArgumentNullException.ThrowIfNull(fontData);
             ArgumentNullException.ThrowIfNull(metrics);
@@ -72,8 +80,8 @@ namespace BinaryKits.Zpl.Viewer.BitmapFonts
                     this.DrawGlyph(glyph, metrics, currentX, top, paint);
                 }
 
-                currentX += metrics.Advance;
-                renderedWidth += metrics.Advance;
+                currentX += metrics.Advance + characterGap;
+                renderedWidth += metrics.Advance + characterGap;
             }
 
             return renderedWidth;
