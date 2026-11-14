@@ -18,8 +18,9 @@ namespace BinaryKits.Zpl.Label.Elements
             int height,
             FieldOrientation fieldOrientation = FieldOrientation.Normal,
             bool bottomToTop = false,
-            bool useDefaultPosition = false)
-            : base(positionX, positionY, bottomToTop, useDefaultPosition)
+            bool useDefaultPosition = false,
+            FieldJustification fieldJustification = FieldJustification.None)
+            : base(positionX, positionY, bottomToTop, useDefaultPosition, fieldJustification)
         {
             GraphicSymbolCharacter? character = default;
             if (!string.IsNullOrEmpty(text))

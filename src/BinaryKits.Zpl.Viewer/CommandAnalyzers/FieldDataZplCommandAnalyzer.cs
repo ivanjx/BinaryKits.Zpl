@@ -127,7 +127,7 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 }
                 else if (virtualPrinter.NextElementFieldData is GraphicSymbolFieldData graphicSymbol)
                 {
-                    return new ZplGraphicSymbol(text, x, y, graphicSymbol.Width, graphicSymbol.Height, graphicSymbol.FieldOrientation, bottomToTop, useDefaultPosition);
+                    return new ZplGraphicSymbol(text, x, y, graphicSymbol.Width, graphicSymbol.Height, graphicSymbol.FieldOrientation, bottomToTop, useDefaultPosition, fieldJustification);
                 }
                 else if (virtualPrinter.NextElementFieldData is CodeMsiBarcodeFieldData msi)
                 {
