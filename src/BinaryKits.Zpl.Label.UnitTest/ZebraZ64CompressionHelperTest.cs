@@ -17,6 +17,28 @@ namespace BinaryKits.Zpl.Label.UnitTest
             string uncompressed = ZebraZ64CompressionHelper.Uncompress(compressed).ToHexFromBytes();
             Assert.AreEqual(originalData, uncompressed);
         }
+        [TestMethod]
+        public void Uncompress_VerifyCrc_AcceptsMatchingCrcInAnyCase()
+        {
+            var compressed = ZebraZ64CompressionHelper.Compress(new byte[] { 0xFF, 0x81, 0x00 });
+            var crcIndex = compressed.LastIndexOf(':') + 1;
+            var upperCaseCrc = compressed.Substring(0, crcIndex) + compressed.Substring(crcIndex).ToUpperInvariant();
+
+            CollectionAssert.AreEqual(new byte[] { 0xFF, 0x81, 0x00 }, ZebraZ64CompressionHelper.Uncompress(compressed, true));
+            CollectionAssert.AreEqual(new byte[] { 0xFF, 0x81, 0x00 }, ZebraZ64CompressionHelper.Uncompress(upperCaseCrc, true));
+        }
+        [TestMethod]
+        public void Uncompress_VerifyCrc_RejectsWrongCrc()
+        {
+            var compressed = ZebraZ64CompressionHelper.Compress(new byte[] { 0xFF, 0x81, 0x00 });
+            var crc = compressed.Substring(compressed.LastIndexOf(':') + 1);
+            var data = compressed.Substring(0, compressed.Length - crc.Length);
+            var wrongCrc = ((Convert.ToUInt16(crc, 16) + 1) & 0xFFFF).ToString("x4");
+
+            Assert.ThrowsExactly<FormatException>(() => ZebraZ64CompressionHelper.Uncompress(data + wrongCrc, true));
+            Assert.ThrowsExactly<FormatException>(() => ZebraZ64CompressionHelper.Uncompress(data + "0" + crc, true), "more than 4 digits");
+            CollectionAssert.AreEqual(new byte[] { 0xFF, 0x81, 0x00 }, ZebraZ64CompressionHelper.Uncompress(data + wrongCrc));
+        }
 #if NET5_0_OR_GREATER
         [TestMethod]
         public void Compress_ValidData1_Successful()

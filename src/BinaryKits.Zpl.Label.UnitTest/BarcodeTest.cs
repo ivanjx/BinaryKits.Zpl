@@ -103,5 +103,52 @@ namespace BinaryKits.Zpl.Label.UnitTest
             Assert.IsNotNull(output);
             Assert.AreEqual("^XA\n^LH0,0\n\n^FO100,300\n^BXN,100,200\n^FD123ABC^FS\n^XZ", output);
         }
+
+        [TestMethod]
+        public void DataMatrixExtendedParameters()
+        {
+            var elements = new List<ZplElementBase>
+            {
+                new ZplDataMatrix("123ABC", 100, 300, qualityLevel: QualityLevel.ECC200, columns: 16, rows: 18, escapeSequence: '_'),
+                new ZplDataMatrix("123ABC", 100, 300, qualityLevel: QualityLevel.ECC200, format: 3),
+                new ZplDataMatrix("123ABC", 100, 300, qualityLevel: QualityLevel.ECC200, aspectRatio: 2)
+            };
+
+            var renderEngine = new ZplEngine(elements);
+            var output = renderEngine.ToZplString(new ZplRenderOptions { AddEmptyLineBeforeElementStart = true });
+
+            Debug.WriteLine(output);
+            Assert.AreEqual("^XA\n^LH0,0\n\n^FO100,300\n^BXN,100,200,16,18,,_\n^FD123ABC^FS\n\n^FO100,300\n^BXN,100,200,,,3\n^FD123ABC^FS\n\n^FO100,300\n^BXN,100,200,,,,~,2\n^FD123ABC^FS\n^XZ", output);
+        }
+
+        [TestMethod]
+        public void BarcodeEan8()
+        {
+            var elements = new List<ZplElementBase>
+            {
+                new ZplBarcodeEan8("1234567", 100, 300)
+            };
+
+            var renderEngine = new ZplEngine(elements);
+            var output = renderEngine.ToZplString(new ZplRenderOptions { AddEmptyLineBeforeElementStart = true });
+
+            Debug.WriteLine(output);
+            Assert.AreEqual("^XA\n^LH0,0\n\n^FO100,300\n^BY2,3\n^B8N,100,Y,N\n^FD1234567^FS\n^XZ", output);
+        }
+
+        [TestMethod]
+        public void BarcodeIndustrial2of5()
+        {
+            var elements = new List<ZplElementBase>
+            {
+                new ZplBarcodeIndustrial2of5("123456", 100, 300, printInterpretationLine: false)
+            };
+
+            var renderEngine = new ZplEngine(elements);
+            var output = renderEngine.ToZplString(new ZplRenderOptions { AddEmptyLineBeforeElementStart = true });
+
+            Debug.WriteLine(output);
+            Assert.AreEqual("^XA\n^LH0,0\n\n^FO100,300\n^BY2,3\n^BIN,100,N,N\n^FD123456^FS\n^XZ", output);
+        }
     }
 }

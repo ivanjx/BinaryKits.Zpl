@@ -27,5 +27,25 @@ namespace BinaryKits.Zpl.Label.UnitTest
             string uncompressed = ZebraB64CompressionHelper.Uncompress(compressed).ToHexFromBytes();
             Assert.AreEqual(originalData, uncompressed);
         }
+
+        [TestMethod]
+        public void Uncompress_VerifyCrc_AcceptsMatchingCrc()
+        {
+            var compressed = ZebraB64CompressionHelper.Compress(new byte[] { 0xFF, 0x81, 0x00 });
+
+            CollectionAssert.AreEqual(new byte[] { 0xFF, 0x81, 0x00 }, ZebraB64CompressionHelper.Uncompress(compressed, true));
+        }
+
+        [TestMethod]
+        public void Uncompress_VerifyCrc_RejectsWrongCrc()
+        {
+            var compressed = ZebraB64CompressionHelper.Compress(new byte[] { 0xFF, 0x81, 0x00 });
+            var crc = compressed.Substring(compressed.LastIndexOf(':') + 1);
+            var wrongCrc = ((Convert.ToUInt16(crc, 16) + 1) & 0xFFFF).ToString("x4");
+            var corrupted = compressed.Substring(0, compressed.Length - crc.Length) + wrongCrc;
+
+            Assert.ThrowsExactly<FormatException>(() => ZebraB64CompressionHelper.Uncompress(corrupted, true));
+            CollectionAssert.AreEqual(new byte[] { 0xFF, 0x81, 0x00 }, ZebraB64CompressionHelper.Uncompress(corrupted));
+        }
     }
 }
