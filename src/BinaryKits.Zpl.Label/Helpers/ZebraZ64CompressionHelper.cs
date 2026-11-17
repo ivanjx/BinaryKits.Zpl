@@ -38,10 +38,25 @@ namespace BinaryKits.Zpl.Label.Helpers
 
         public static byte[] Uncompress(string hexData)
         {
+            return Uncompress(hexData, false);
+        }
+
+        /// <summary>
+        /// Decodes <c>:Z64:data:crc</c>.
+        /// </summary>
+        /// <param name="hexData">Z64 encoded data</param>
+        /// <param name="verifyCrc">Check the CRC-16/CCITT-XMODEM of the Base64 text; throws <see cref="FormatException"/> on mismatch</param>
+        public static byte[] Uncompress(string hexData, bool verifyCrc)
+        {
             var match = _z64Regex.Match(hexData);
             if (match.Success)
             {
                 var imageBase64 = match.Groups[2].Value;
+                if (verifyCrc)
+                {
+                    VerifyCrc(imageBase64, match.Groups[3].Value);
+                }
+
                 var bytes = imageBase64.FromBase64();
 #if NET5_0_OR_GREATER
                 return InflateCore(bytes);
@@ -52,6 +67,19 @@ namespace BinaryKits.Zpl.Label.Helpers
             else
             {
                 throw new FormatException("Hex string not in Z64 format");
+            }
+        }
+
+        /// <summary>
+        /// Throws <see cref="FormatException"/> when <paramref name="crcHex"/> (1 to 4 hex digits) is not the
+        /// CRC-16/CCITT-XMODEM of the ASCII text <paramref name="base64"/>.
+        /// </summary>
+        internal static void VerifyCrc(string base64, string crcHex)
+        {
+            var actual = Crc16.Compute(base64.EncodeBytes());
+            if (crcHex.Length > 4 || Convert.ToUInt16(crcHex, 16) != actual)
+            {
+                throw new FormatException($"CRC {crcHex} does not match the data CRC {actual:X4}");
             }
         }
 

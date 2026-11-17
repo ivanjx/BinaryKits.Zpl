@@ -169,6 +169,15 @@ namespace BinaryKits.Zpl.Viewer.Helpers
         }
 
         /// <summary>
+        /// Base cell (matrix height and width in dots at 1×) of a resident font at the density, or null for fonts or
+        /// densities without a matrix.
+        /// </summary>
+        public static (int height, int width)? GetMatrixSize(string fontName, int printDensityDpmm)
+        {
+            return GetFontScale(fontName, printDensityDpmm);
+        }
+
+        /// <summary>
         /// Creates the outline font for a text field cell: scalable fonts (0, P–V) by cap height, resident bitmap font
         /// substitutes (A–H) by character pitch. Scalable fonts are rasterized 1-bit (a dot is inked when its center
         /// lies inside the outline), like the printer's thermal head, instead of Labelary's antialiased edges.

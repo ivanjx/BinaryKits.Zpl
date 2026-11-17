@@ -28,11 +28,11 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
 
                 if (virtualPrinter.NextFont != null)
                 {
-                    virtualPrinter.SetNextFont(virtualPrinter.NextFont.FontName, fieldOrientation, virtualPrinter.NextFont.FontWidth, virtualPrinter.NextFont.FontHeight);
+                    virtualPrinter.SetNextFont(virtualPrinter.NextFont.FontName, fieldOrientation, virtualPrinter.NextFont.FontWidth, virtualPrinter.NextFont.FontHeight, virtualPrinter.NextFont.FontFileName);
                 }
                 else
                 {
-                    virtualPrinter.SetNextFont(virtualPrinter.FontName, fieldOrientation, virtualPrinter.FontWidth, virtualPrinter.FontHeight);
+                    virtualPrinter.SetNextFont(virtualPrinter.FontName, fieldOrientation, virtualPrinter.FontWidth, virtualPrinter.FontHeight, virtualPrinter.FontFileName);
                 }
             }
 

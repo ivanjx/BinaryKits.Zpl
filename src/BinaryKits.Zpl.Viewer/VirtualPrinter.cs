@@ -17,7 +17,20 @@ namespace BinaryKits.Zpl.Viewer
         public int FontWidth { get; private set; }
         public int FontHeight { get; private set; }
         public string FontName { get; private set; } = "A";
+
+        /// <summary>
+        /// Normalized <c>D:NAME.EXT</c> of the default font when ^CF selected a ^CW alias, <c>null</c> otherwise
+        /// </summary>
+        public string FontFileName { get; private set; }
+
+        /// <summary>
+        /// Last ^A@ font name of the current label, reused by later ^A@ commands without a name
+        /// </summary>
+        public string FontByNameFileName { get; private set; }
+
         public List<string> Comments { get; private set; }
+
+        private readonly Dictionary<char, string> fontAliases = [];
 
         /// <summary>
         /// Override the default font, only for the next element
@@ -85,9 +98,10 @@ namespace BinaryKits.Zpl.Viewer
             string fontName,
             FieldOrientation fieldOrientation,
             int fontWidth,
-            int fontHeight)
+            int fontHeight,
+            string fontFileName = null)
         {
-            this.NextFont = new FontInfo(fontName, fieldOrientation, fontWidth, fontHeight);
+            this.NextFont = new FontInfo(fontName, fieldOrientation, fontWidth, fontHeight, fontFileName);
         }
 
         public void ClearNextFont()
@@ -147,7 +161,7 @@ namespace BinaryKits.Zpl.Viewer
             this.FieldOrientation = fieldOrientation;
             if (this.NextFont != null)
             {
-                this.SetNextFont(this.NextFont.FontName, fieldOrientation, this.NextFont.FontWidth, this.NextFont.FontHeight);
+                this.SetNextFont(this.NextFont.FontName, fieldOrientation, this.NextFont.FontWidth, this.NextFont.FontHeight, this.NextFont.FontFileName);
             }
         }
 
@@ -169,6 +183,34 @@ namespace BinaryKits.Zpl.Viewer
         public void SetFontName(string fontName)
         {
             this.FontName = fontName;
+        }
+
+        public void SetFontFileName(string fontFileName)
+        {
+            this.FontFileName = fontFileName;
+        }
+
+        public void SetFontByNameFileName(string fontFileName)
+        {
+            this.FontByNameFileName = fontFileName;
+        }
+
+        public void ClearFontByNameFileName()
+        {
+            this.FontByNameFileName = null;
+        }
+
+        /// <summary>
+        /// ^CW: maps a font letter to a downloaded font name until the printer is reset (last write wins)
+        /// </summary>
+        public void SetFontAlias(char fontLetter, string fontFileName)
+        {
+            this.fontAliases[fontLetter] = fontFileName;
+        }
+
+        public bool TryGetFontAlias(char fontLetter, out string fontFileName)
+        {
+            return this.fontAliases.TryGetValue(fontLetter, out fontFileName);
         }
 
         public void SetBarcodeModuleWidth(int moduleWidth)

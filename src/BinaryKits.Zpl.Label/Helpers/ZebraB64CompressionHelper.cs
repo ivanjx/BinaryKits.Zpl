@@ -27,10 +27,25 @@ namespace BinaryKits.Zpl.Label.Helpers
 
         public static byte[] Uncompress(string hexData)
         {
+            return Uncompress(hexData, false);
+        }
+
+        /// <summary>
+        /// Decodes <c>:B64:data:crc</c>.
+        /// </summary>
+        /// <param name="hexData">B64 encoded data</param>
+        /// <param name="verifyCrc">Check the CRC-16/CCITT-XMODEM of the Base64 text; throws <see cref="FormatException"/> on mismatch</param>
+        public static byte[] Uncompress(string hexData, bool verifyCrc)
+        {
             var match = _b64Regex.Match(hexData);
             if (match.Success)
             {
                 var imageBase64 = match.Groups[2].Value;
+                if (verifyCrc)
+                {
+                    ZebraZ64CompressionHelper.VerifyCrc(imageBase64, match.Groups[3].Value);
+                }
+
                 return imageBase64.FromBase64();
             }
             else

@@ -8,9 +8,25 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
         public ScalableBitmappedFontZplCommandAnalyzer() : base("^A") { }
 
         ///<inheritdoc/>
+        public override bool CanAnalyze(string zplLine)
+        {
+            // ^A@ selects a font by name and has its own analyzer
+            return base.CanAnalyze(zplLine) && !zplLine.StartsWith("^A@");
+        }
+
+        ///<inheritdoc/>
         public override ZplElementBase Analyze(string zplCommand, VirtualPrinter virtualPrinter, IPrinterStorage printerStorage)
         {
-            string fontName = zplCommand[this.PrinterCommandPrefix.Length].ToString();
+            char fontLetter = zplCommand[this.PrinterCommandPrefix.Length];
+            string fontName = fontLetter.ToString();
+            string fontFileName = null;
+
+            // A ^CW alias turns the letter into a named selection; the ^CF font stays the fallback
+            if (virtualPrinter.TryGetFontAlias(fontLetter, out string aliasFileName))
+            {
+                fontName = virtualPrinter.FontName;
+                fontFileName = aliasFileName;
+            }
 
             string[] zplDataParts = this.SplitCommand(zplCommand, 1);
 
@@ -32,7 +48,7 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 fontWidth = tmpint;
             }
 
-            virtualPrinter.SetNextFont(fontName, fieldOrientation, fontWidth, fontHeight);
+            virtualPrinter.SetNextFont(fontName, fieldOrientation, fontWidth, fontHeight, fontFileName);
 
             return null;
         }

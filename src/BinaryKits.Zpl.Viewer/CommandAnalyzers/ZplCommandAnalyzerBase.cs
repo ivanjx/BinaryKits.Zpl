@@ -13,7 +13,7 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
         }
 
         ///<inheritdoc/>
-        public bool CanAnalyze(string zplLine)
+        public virtual bool CanAnalyze(string zplLine)
         {
             return zplLine.StartsWith(this.PrinterCommandPrefix);
         }

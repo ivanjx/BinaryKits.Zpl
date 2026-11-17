@@ -20,7 +20,17 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 string newFont = zplDataParts[0];
                 if (!string.IsNullOrEmpty(newFont))
                 {
-                    virtualPrinter.SetFontName(newFont);
+                    // A ^CW alias makes the default font a named selection; the previous ^CF letter stays the
+                    // fallback when the name does not resolve
+                    if (newFont.Length == 1 && virtualPrinter.TryGetFontAlias(newFont[0], out string aliasFileName))
+                    {
+                        virtualPrinter.SetFontFileName(aliasFileName);
+                    }
+                    else
+                    {
+                        virtualPrinter.SetFontName(newFont);
+                        virtualPrinter.SetFontFileName(null);
+                    }
                 }
             }
 

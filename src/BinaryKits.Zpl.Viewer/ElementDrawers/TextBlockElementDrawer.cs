@@ -1,6 +1,7 @@
 using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
 using BinaryKits.Zpl.Viewer.BitmapFonts;
+using BinaryKits.Zpl.Viewer.DownloadedFonts;
 using BinaryKits.Zpl.Viewer.Helpers;
 
 using SkiaSharp;
@@ -44,7 +45,16 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
 
                 text = RemoveEscapeSequences(text);
-                text = text.ApplyInternationalCharacterSet(font.FontName, internationalFont);
+
+                // Downloaded fonts print the decoded code points as they are (\ stays \), in every rendering mode
+                using ZplDownloadedFontText downloadedText = ZplDownloadedFontText.TryCreate(font, this.printerStorage, printDensityDpmm, out ZplDownloadedFontText resolvedText) ?
+                    resolvedText :
+                    null;
+
+                if (downloadedText == null)
+                {
+                    text = text.ApplyInternationalCharacterSet(font.FontName, internationalFont);
+                }
 
                 // Soft hyphens are neither printed nor break points
                 text = text.Replace("\u00AD", "");
@@ -62,6 +72,24 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     textBlock.FieldOrigin.FieldJustification :
                     textBlock.FieldTypeset.FieldJustification;
                 bool rightJustified = IsRightJustified(text, fieldJustification);
+
+                if (downloadedText != null)
+                {
+                    // Lines are one cell apart and sit like a plain ^FO field at their line top
+                    using SKPaint paint = ZplDownloadedFontText.CreatePaint(textBlock.ReversePrint);
+                    List<string> downloadedLines = WrapText(text, textBlock.Width, value => downloadedText.MeasureText(value));
+
+                    return this.DrawTextBlock(
+                        textBlock,
+                        downloadedLines,
+                        x,
+                        y,
+                        rightJustified,
+                        lineIndex => MathF.Round(lineIndex * downloadedText.CellHeight, MidpointRounding.AwayFromZero),
+                        value => downloadedText.MeasureText(value),
+                        (line, lineX, lineTop) => downloadedText.DrawText(this.skCanvas, line, lineX, lineTop, paint),
+                        currentPosition);
+                }
 
                 if (this.TryDrawBitmapTextBlock(
                         textBlock,

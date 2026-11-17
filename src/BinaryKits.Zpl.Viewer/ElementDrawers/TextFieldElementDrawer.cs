@@ -1,6 +1,7 @@
 using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
 using BinaryKits.Zpl.Viewer.BitmapFonts;
+using BinaryKits.Zpl.Viewer.DownloadedFonts;
 using BinaryKits.Zpl.Viewer.Helpers;
 
 using SkiaSharp;
@@ -56,6 +57,15 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 if (textField.HexadecimalIndicator is char hexIndicator)
                 {
                     displayText = displayText.ReplaceHexEscapes(hexIndicator, internationalFont);
+                }
+
+                // Downloaded fonts print the decoded code points as they are (\ stays \), in every rendering mode
+                if (ZplDownloadedFontText.TryCreate(font, this.printerStorage, printDensityDpmm, out ZplDownloadedFontText downloadedText))
+                {
+                    using (downloadedText)
+                    {
+                        return this.DrawDownloadedTextField(textField, downloadedText, currentPosition, displayText, x, y);
+                    }
                 }
 
                 displayText = displayText.ApplyInternationalCharacterSet(font.FontName, internationalFont);
@@ -175,6 +185,91 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             return currentPosition;
+        }
+
+        /// <summary>
+        /// Draws a text field with a downloaded font: real glyph advances, the font's cell for V/R fields and
+        /// justification, the cell top on ^FO y or the baseline on ^FT y.
+        /// </summary>
+        private SKPoint DrawDownloadedTextField(
+            ZplTextField textField,
+            ZplDownloadedFontText text,
+            SKPoint currentPosition,
+            string displayText,
+            float x,
+            float y)
+        {
+            FieldDirection fieldDirection = textField.FieldDirection;
+            float characterGap = textField.CharacterGap;
+            float cellHeight = text.CellHeight;
+
+            // Characters of V (one per row) and R (reversed order) fields
+            List<string> characters = null;
+            if (fieldDirection != FieldDirection.Horizontal)
+            {
+                characters = [.. displayText.EnumerateRunes().Select(rune => rune.ToString())];
+
+                if (fieldDirection == FieldDirection.Reverse)
+                {
+                    characters.Reverse();
+                    displayText = string.Concat(characters);
+                }
+            }
+
+            float totalWidth = text.MeasureText(displayText, characterGap);
+            bool useFieldOrigin = textField.FieldOrigin != null;
+            float topY = useFieldOrigin ? y : y - text.Baseline;
+            bool rightJustified = IsRightJustified(displayText, useFieldOrigin ?
+                textField.FieldOrigin.FieldJustification :
+                textField.FieldTypeset.FieldJustification);
+
+            (float boxWidth, float boxHeight) = fieldDirection switch
+            {
+                FieldDirection.Vertical => (cellHeight, GetVerticalFieldHeight(characters.Count, cellHeight, characterGap)),
+                FieldDirection.Reverse => (text.CellWidth, cellHeight),
+                _ => (totalWidth, cellHeight)
+            };
+
+            if (useFieldOrigin && rightJustified)
+            {
+                x = GetRightJustifiedFieldOriginX(x, boxWidth, boxHeight, textField.Font.FieldOrientation);
+            }
+
+            using (new SKAutoCanvasRestore(this.skCanvas))
+            {
+                SKMatrix matrix = CreateFieldRotationMatrix(textField.Font.FieldOrientation, useFieldOrigin, x, y, boxWidth, boxHeight);
+
+                if (matrix != SKMatrix.Empty)
+                {
+                    this.skCanvas.Concat(matrix);
+                }
+
+                float drawX = x + GetTextOffsetX(fieldDirection, useFieldOrigin, rightJustified, totalWidth, boxWidth);
+
+                using SKPaint paint = ZplDownloadedFontText.CreatePaint(textField.ReversePrint);
+
+                if (fieldDirection == FieldDirection.Vertical)
+                {
+                    for (int i = 0; i < characters.Count; i++)
+                    {
+                        text.DrawText(this.skCanvas, characters[i], drawX, topY + i * (cellHeight + characterGap), paint);
+                    }
+                }
+                else
+                {
+                    text.DrawText(this.skCanvas, displayText, drawX, topY, paint, characterGap);
+                }
+
+                // The next default position continues on the baseline after the text
+                return this.CalculateNextDefaultPosition(
+                    x,
+                    topY + text.Baseline,
+                    fieldDirection == FieldDirection.Vertical ? boxWidth : totalWidth,
+                    cellHeight,
+                    false,
+                    textField.Font.FieldOrientation,
+                    currentPosition);
+            }
         }
 
         private bool TryDrawBitmapTextField(

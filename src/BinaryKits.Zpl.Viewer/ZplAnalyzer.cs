@@ -24,6 +24,7 @@ namespace BinaryKits.Zpl.Viewer
             new BarCodeFieldDefaultZplCommandAnalyzer(),
             new ChangeAlphanumericDefaultFontZplCommandAnalyzer(),
             new ChangeInternationalFontCommandAnalyzer(),
+            new FontIdentifierZplCommandAnalyzer(),
             new Code11BarcodeZplCommandAnalyzer(),
             new Code39BarcodeZplCommandAnalyzer(),
             new Code93BarcodeZplCommandAnalyzer(),
@@ -32,9 +33,12 @@ namespace BinaryKits.Zpl.Viewer
             new CodeEAN8BarcodeZplCommandAnalyzer(),
             new CommentZplCommandAnalyzer(),
             new DataMatrixZplCommandAnalyzer(),
+            new DownloadBitmapFontZplCommandAnalyzer(),
             new DownloadFormatCommandAnalyzer(),
             new DownloadGraphicsZplCommandAnalyzer(),
             new DownloadObjectsZplCommandAnaylzer(),
+            new DownloadUnboundedFontZplCommandAnalyzer("~DU"),
+            new DownloadUnboundedFontZplCommandAnalyzer("~DT"),
             new FieldBlockZplCommandAnalyzer(),
             new FieldHexadecimalZplCommandAnalyzer(),
             new FieldOrientationZplCommandAnalyzer(),
@@ -45,6 +49,7 @@ namespace BinaryKits.Zpl.Viewer
             new LabelReversePrintZplCommandAnalyzer(),
             new FieldSeparatorZplCommandAnalyzer(),
             new FieldTypesetZplCommandAnalyzer(),
+            new FontLinkZplCommandAnalyzer(),
             new FieldOriginZplCommandAnalzer(),
             new TextBlockZplCommandAnalyzer(),
             new GraphicBoxZplCommandAnalyzer(),
@@ -66,6 +71,7 @@ namespace BinaryKits.Zpl.Viewer
             new RecallFormatCommandAnalyzer(),
             new RecallGraphicZplCommandAnalyzer(),
             new ScalableBitmappedFontZplCommandAnalyzer(),
+            new FontByNameZplCommandAnalyzer(),
             new AnsiCodabarBarcodeZplCommandAnalyzer(),
             new MsiBarcodeZplCommandAnalyzer(),
             new LogmarsZplCommandAnalyzer(),
@@ -101,6 +107,7 @@ namespace BinaryKits.Zpl.Viewer
                 {
                     elements.Clear();
                     this.virtualPrinter.ClearNextDownloadFormatName();
+                    this.virtualPrinter.ClearFontByNameFileName();
                     continue;
                 }
 

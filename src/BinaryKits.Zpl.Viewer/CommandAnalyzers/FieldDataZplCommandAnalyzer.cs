@@ -264,7 +264,7 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
             string fontName = virtualPrinter.FontName;
             FieldOrientation fieldOrientation = virtualPrinter.FieldOrientation;
 
-            return new ZplFont(fontWidth, fontHeight, fontName, fieldOrientation);
+            return new ZplFont(fontWidth, fontHeight, fontName, fieldOrientation, virtualPrinter.FontFileName);
         }
 
         private ZplFont GetNextFontFromVirtualPrinter(VirtualPrinter virtualPrinter)
@@ -274,7 +274,7 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
             string fontName = virtualPrinter.NextFont.FontName;
             FieldOrientation fieldOrientation = virtualPrinter.NextFont.FieldOrientation;
 
-            return new ZplFont(fontWidth, fontHeight, fontName, fieldOrientation);
+            return new ZplFont(fontWidth, fontHeight, fontName, fieldOrientation, virtualPrinter.NextFont.FontFileName);
         }
     }
 }

@@ -1,6 +1,7 @@
 using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
 using BinaryKits.Zpl.Viewer.BitmapFonts;
+using BinaryKits.Zpl.Viewer.DownloadedFonts;
 using BinaryKits.Zpl.Viewer.Helpers;
 
 using SkiaSharp;
@@ -50,6 +51,16 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
 
                 List<string> paragraphs = SplitParagraphs(text);
+
+                // Downloaded fonts print the decoded code points as they are (\ stays \), in every rendering mode
+                if (ZplDownloadedFontText.TryCreate(font, this.printerStorage, printDensityDpmm, out ZplDownloadedFontText downloadedText))
+                {
+                    using (downloadedText)
+                    {
+                        return this.DrawDownloadedFieldBlock(fieldBlock, downloadedText, currentPosition, paragraphs);
+                    }
+                }
+
                 for (int i = 0; i < paragraphs.Count; i++)
                 {
                     paragraphs[i] = paragraphs[i].ApplyInternationalCharacterSet(font.FontName, internationalFont);
@@ -110,7 +121,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     positionY = currentPosition.Y;
                 }
 
-                List<WrappedTextLine> textLines = WordWrap(paragraphs, skFont, fieldBlock.Width);
+                List<WrappedTextLine> textLines = WordWrap(paragraphs, value => skFont.MeasureShapedText(value), fieldBlock.Width);
                 int hangingIndent = 0;
                 float lineHeight = lineCellHeight + fieldBlock.LineSpace;
                 float y = positionY + baseline;
@@ -297,55 +308,16 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 using SKPaint paint = ZplBitmapFontRenderer.CreatePaint(fieldBlock.ReversePrint);
                 ZplBitmapFontRenderer renderer = new(this.skCanvas);
-                int hangingIndent = 0;
-                int lineIndex = 0;
 
-                foreach (WrappedTextLine wrappedLine in textLines)
-                {
-                    string textLine = wrappedLine.Text;
-                    int visibleLineIndex = Math.Min(lineIndex, maxLineCount - 1);
-                    int lineWidth = ZplBitmapFontRenderer.MeasureTextWidth(textLine, metrics);
-                    float lineX = x + hangingIndent;
-                    float lineY = topY + visibleLineIndex * metrics.LineHeight;
-                    float diff = fieldBlock.Width - lineWidth;
-
-                    // A line wider than the block starts at the block's x for every justification (Labelary)
-                    switch (fieldBlock.TextJustification)
-                    {
-                        case TextJustification.Center:
-                            if (diff > 0)
-                            {
-                                lineX += diff / 2;
-                            }
-                            break;
-                        case TextJustification.Right:
-                            if (diff > 0)
-                            {
-                                lineX += diff;
-                            }
-                            hangingIndent = -fieldBlock.HangingIndent;
-                            break;
-                        case TextJustification.Left:
-                        case TextJustification.Justified:
-                        default:
-                            hangingIndent = fieldBlock.HangingIndent;
-                            break;
-                    }
-
-                    if (fieldBlock.TextJustification == TextJustification.Justified &&
-                        wrappedLine.ShouldJustify)
-                    {
-                        float currentLineIndent = lineX - x;
-                        float availableWidth = Math.Max(fieldBlock.Width - currentLineIndent, 1);
-                        this.DrawJustifiedBitmapTextLine(textLine, lineX, lineY, availableWidth, fontData, metrics, renderer, paint);
-                    }
-                    else
-                    {
-                        renderer.DrawText(textLine, fontData, metrics, lineX, lineY, paint);
-                    }
-
-                    lineIndex++;
-                }
+                this.DrawFieldBlockLines(
+                    fieldBlock,
+                    textLines,
+                    x,
+                    topY,
+                    metrics.LineHeight,
+                    maxLineCount,
+                    value => ZplBitmapFontRenderer.MeasureTextWidth(value, metrics),
+                    (value, lineX, lineY) => renderer.DrawText(value, fontData, metrics, lineX, lineY, paint));
 
                 nextPosition = this.CalculateNextDefaultPosition(
                     fieldBlock.PositionX,
@@ -358,6 +330,134 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Draws a field block with a downloaded font: lines wrap and justify by the real glyph advances and are
+        /// <c>CellHeight</c> plus the ^FB line spacing apart; ^FT puts the last line's baseline on y.
+        /// </summary>
+        private SKPoint DrawDownloadedFieldBlock(
+            ZplFieldBlock fieldBlock,
+            ZplDownloadedFontText text,
+            SKPoint currentPosition,
+            IReadOnlyList<string> paragraphs)
+        {
+            List<WrappedTextLine> textLines = WordWrap(paragraphs, value => text.MeasureText(value), fieldBlock.Width);
+            int maxLineCount = Math.Max(fieldBlock.MaxLineCount, 1);
+            float lineHeight = text.CellHeight + fieldBlock.LineSpace;
+            float totalHeight = lineHeight * maxLineCount - fieldBlock.LineSpace;
+            float x = fieldBlock.PositionX;
+            float topY = fieldBlock.PositionY;
+
+            if (fieldBlock.UseDefaultPosition)
+            {
+                x = currentPosition.X;
+                topY = currentPosition.Y;
+            }
+
+            if (fieldBlock.FieldTypeset != null)
+            {
+                topY -= (maxLineCount - 1) * lineHeight + text.Baseline;
+            }
+
+            using (new SKAutoCanvasRestore(this.skCanvas))
+            {
+                SKMatrix matrix = CreateFieldBlockRotationMatrix(fieldBlock, totalHeight);
+
+                if (matrix != SKMatrix.Empty)
+                {
+                    SKMatrix currentMatrix = this.skCanvas.TotalMatrix;
+                    SKMatrix concatMatrix = SKMatrix.Concat(currentMatrix, matrix);
+                    this.skCanvas.SetMatrix(concatMatrix);
+                }
+
+                using SKPaint paint = ZplDownloadedFontText.CreatePaint(fieldBlock.ReversePrint);
+
+                this.DrawFieldBlockLines(
+                    fieldBlock,
+                    textLines,
+                    x,
+                    topY,
+                    lineHeight,
+                    maxLineCount,
+                    value => text.MeasureText(value),
+                    (value, lineX, lineY) => text.DrawText(this.skCanvas, value, lineX, lineY, paint));
+
+                return this.CalculateNextDefaultPosition(
+                    fieldBlock.PositionX,
+                    fieldBlock.PositionY,
+                    fieldBlock.Width,
+                    totalHeight,
+                    fieldBlock.FieldOrigin != null,
+                    fieldBlock.Font.FieldOrientation,
+                    currentPosition);
+            }
+        }
+
+        /// <summary>
+        /// Draws wrapped lines of a field block whose cell top is at <paramref name="topY"/>: justification, hanging
+        /// indent, and lines past <paramref name="maxLineCount"/> overprinting the last line. <paramref name="drawText"/>
+        /// draws a line with its cell top at the given point and returns the advanced width.
+        /// </summary>
+        private void DrawFieldBlockLines(
+            ZplFieldBlock fieldBlock,
+            IReadOnlyList<WrappedTextLine> textLines,
+            float x,
+            float topY,
+            float lineHeight,
+            int maxLineCount,
+            Func<string, float> measureText,
+            Func<string, float, float, float> drawText)
+        {
+            int hangingIndent = 0;
+            int lineIndex = 0;
+
+            foreach (WrappedTextLine wrappedLine in textLines)
+            {
+                string textLine = wrappedLine.Text;
+                int visibleLineIndex = Math.Min(lineIndex, maxLineCount - 1);
+                float lineWidth = measureText(textLine);
+                float lineX = x + hangingIndent;
+                float lineY = topY + visibleLineIndex * lineHeight;
+                float diff = fieldBlock.Width - lineWidth;
+
+                // A line wider than the block starts at the block's x for every justification (Labelary)
+                switch (fieldBlock.TextJustification)
+                {
+                    case TextJustification.Center:
+                        if (diff > 0)
+                        {
+                            lineX += diff / 2;
+                        }
+                        break;
+                    case TextJustification.Right:
+                        if (diff > 0)
+                        {
+                            lineX += diff;
+                        }
+                        hangingIndent = -fieldBlock.HangingIndent;
+                        break;
+                    case TextJustification.Left:
+                    case TextJustification.Justified:
+                    default:
+                        hangingIndent = fieldBlock.HangingIndent;
+                        break;
+                }
+
+                if (fieldBlock.TextJustification == TextJustification.Justified &&
+                    wrappedLine.ShouldJustify)
+                {
+                    float currentLineIndent = lineX - x;
+                    float availableWidth = Math.Max(fieldBlock.Width - currentLineIndent, 1);
+                    DrawJustifiedLine(textLine, lineX, lineY, availableWidth, measureText, drawText);
+                }
+                else
+                {
+                    drawText(textLine, lineX, lineY);
+                }
+
+                lineIndex++;
+            }
         }
 
         private static SKMatrix CreateFieldBlockRotationMatrix(ZplFieldBlock fieldBlock, float totalHeight)
@@ -418,29 +518,30 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 out fontData);
         }
 
-        private void DrawJustifiedBitmapTextLine(
+        /// <summary>
+        /// Draws a justified line: the space left in <paramref name="lineWidth"/> is spread over the gaps between words.
+        /// </summary>
+        private static void DrawJustifiedLine(
             string textLine,
             float x,
             float y,
             float lineWidth,
-            ZplBitmapFontData fontData,
-            ZplBitmapFontMetrics metrics,
-            ZplBitmapFontRenderer renderer,
-            SKPaint paint)
+            Func<string, float> measureText,
+            Func<string, float, float, float> drawText)
         {
             string[] words = textLine.Split([' '], StringSplitOptions.None);
 
             if (words.Length <= 1)
             {
-                renderer.DrawText(textLine, fontData, metrics, x, y, paint);
+                drawText(textLine, x, y);
                 return;
             }
 
-            int wordsWidth = 0;
+            float wordsWidth = 0;
 
             foreach (string word in words)
             {
-                wordsWidth += ZplBitmapFontRenderer.MeasureTextWidth(word, metrics);
+                wordsWidth += measureText(word);
             }
 
             int gapCount = words.Length - 1;
@@ -448,7 +549,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
             if (!float.IsFinite(gapWidth) || gapWidth <= 0)
             {
-                renderer.DrawText(textLine, fontData, metrics, x, y, paint);
+                drawText(textLine, x, y);
                 return;
             }
 
@@ -460,7 +561,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
                 if (word.Length > 0)
                 {
-                    currentX += renderer.DrawText(word, fontData, metrics, currentX, y, paint);
+                    currentX += drawText(word, currentX, y);
                 }
 
                 if (i < gapCount)
@@ -569,9 +670,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             }
         }
 
-        private static List<WrappedTextLine> WordWrap(IReadOnlyList<string> paragraphs, SKFont font, int maxWidth)
+        private static List<WrappedTextLine> WordWrap(IReadOnlyList<string> paragraphs, Func<string, float> measureText, int maxWidth)
         {
-            float spaceWidth = font.MeasureShapedText(" ");
+            float spaceWidth = measureText(" ");
             List<WrappedTextLine> lines = [];
 
             StringBuilder line = new();
@@ -580,7 +681,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
             {
                 if (endsParagraph)
                 {
-                    float wordWidth = font.MeasureShapedText(word);
+                    float wordWidth = measureText(word);
                     if (width + wordWidth <= maxWidth)
                     {
                         line.Append(word);
@@ -601,7 +702,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 }
                 else
                 {
-                    float wordWidth = font.MeasureShapedText(word);
+                    float wordWidth = measureText(word);
                     if (wordWidth > maxWidth)
                     {
                         if (line.Length > 0)
@@ -611,12 +712,9 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                             width = 0;
                         }
 
-                        List<string> chunks = SplitLongWord(
-                            word,
-                            maxWidth,
-                            value => font.MeasureShapedText(value));
+                        List<string> chunks = SplitLongWord(word, maxWidth, measureText);
 
-                        AddLongWordChunks(chunks, lines, line, ref width, spaceWidth, value => font.MeasureShapedText(value));
+                        AddLongWordChunks(chunks, lines, line, ref width, spaceWidth, measureText);
                         continue;
                     }
 
