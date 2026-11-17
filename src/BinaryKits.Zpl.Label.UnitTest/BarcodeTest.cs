@@ -1,6 +1,7 @@
 ﻿using BinaryKits.Zpl.Label.Elements;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Diagnostics;
 
 namespace BinaryKits.Zpl.Label.UnitTest
@@ -149,6 +150,31 @@ namespace BinaryKits.Zpl.Label.UnitTest
 
             Debug.WriteLine(output);
             Assert.AreEqual("^XA\n^LH0,0\n\n^FO100,300\n^BY2,3\n^BIN,100,N,N\n^FD123456^FS\n^XZ", output);
+        }
+
+        [TestMethod]
+        public void BarcodeRatioUsesDotInAnyCulture()
+        {
+            var originalCulture = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+
+            try
+            {
+                var elements = new List<ZplElementBase>
+                {
+                    new ZplBarcode39("123ABC", 100, 100, wideBarToNarrowBarWidthRatio: 2.5)
+                };
+
+                var renderEngine = new ZplEngine(elements);
+                var output = renderEngine.ToZplString(new ZplRenderOptions { AddEmptyLineBeforeElementStart = true });
+
+                Debug.WriteLine(output);
+                Assert.AreEqual("^XA\n^LH0,0\n\n^FO100,100\n^BY2,2.5\n^B3N,N,100,Y,N\n^FD123ABC^FS\n^XZ", output);
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = originalCulture;
+            }
         }
     }
 }

@@ -111,6 +111,20 @@ namespace BinaryKits.Zpl.Viewer.UnitTest
         }
 
         [TestMethod]
+        public void DisposedSharedFontPrintsWithFontName()
+        {
+            using PrinterStorage storage = new();
+            using ZplDownloadedOutlineFont font = new(File.ReadAllBytes(FindTriumvirate()));
+            storage.AddFont('E', "SHARED.TTF", font, ownsFont: false);
+            font.Dispose();
+
+            byte[] named = Render(storage, new ZplTextField("HELLO", 20, 20, new ZplFont(30, 40, "A", fontFileName: "E:SHARED.TTF")));
+            byte[] plain = Render(storage, new ZplTextField("HELLO", 20, 20, new ZplFont(30, 40, "A")));
+
+            CollectionAssert.AreEqual(plain, named);
+        }
+
+        [TestMethod]
         public void OutlineFieldBlockWrapsByRealAdvances()
         {
             using PrinterStorage storage = CreateStorage();

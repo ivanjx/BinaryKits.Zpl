@@ -2,6 +2,7 @@ using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
 
 using System;
+using System.Linq;
 
 namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
 {
@@ -35,9 +36,19 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
             }
 
             int characterGap = 0;
-            if (zplDataParts.Length > 1 && int.TryParse(zplDataParts[1], out int tmpint))
+            if (zplDataParts.Length > 1)
             {
-                characterGap = Math.Clamp(tmpint, 0, maxCharacterGap);
+                string gap = zplDataParts[1];
+
+                if (int.TryParse(gap, out int tmpint))
+                {
+                    characterGap = Math.Clamp(tmpint, 0, maxCharacterGap);
+                }
+                else if (gap.Length > 0 && gap.All(char.IsAsciiDigit))
+                {
+                    // Too many digits for an int: still above the maximum
+                    characterGap = maxCharacterGap;
+                }
             }
 
             virtualPrinter.SetNextElementFieldParameter(fieldDirection, characterGap);

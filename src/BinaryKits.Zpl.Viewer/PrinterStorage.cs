@@ -25,6 +25,8 @@ namespace BinaryKits.Zpl.Viewer
 
             lock (this.sync)
             {
+                ObjectDisposedException.ThrowIf(this.disposed, this);
+
                 this.RemoveFont(key);
                 this.files[key] = data;
             }
@@ -43,12 +45,13 @@ namespace BinaryKits.Zpl.Viewer
         public void AddFont(char storageDevice, string fileName, ZplDownloadedFont font, bool ownsFont = true)
         {
             ArgumentNullException.ThrowIfNull(font);
-            ObjectDisposedException.ThrowIf(this.disposed, this);
 
             string key = GetKey(storageDevice, fileName);
 
             lock (this.sync)
             {
+                ObjectDisposedException.ThrowIf(this.disposed, this);
+
                 this.files.Remove(key);
 
                 if (this.fonts.TryGetValue(key, out StoredFont previous) && !ReferenceEquals(previous.Font, font))

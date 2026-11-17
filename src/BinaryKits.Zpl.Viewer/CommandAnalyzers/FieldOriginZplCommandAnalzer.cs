@@ -1,6 +1,8 @@
 ﻿using BinaryKits.Zpl.Label;
 using BinaryKits.Zpl.Label.Elements;
 
+using System.Globalization;
+
 namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
 {
     public class FieldOriginZplCommandAnalzer : ZplCommandAnalyzerBase
@@ -17,14 +19,14 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
             int y = 0;
 
             if (zplDataParts.Length > 0 &&
-                decimal.TryParse(zplDataParts[0], out tmpdec) &&
+                decimal.TryParse(zplDataParts[0], NumberStyles.Number, CultureInfo.InvariantCulture, out tmpdec) &&
                 int.MinValue <= tmpdec && tmpdec <= int.MaxValue)
             {
                 x = decimal.ToInt32(tmpdec);
             }
 
             if (zplDataParts.Length > 1 &&
-                decimal.TryParse(zplDataParts[1], out tmpdec) &&
+                decimal.TryParse(zplDataParts[1], NumberStyles.Number, CultureInfo.InvariantCulture, out tmpdec) &&
                 int.MinValue <= tmpdec && tmpdec <= int.MaxValue)
             {
                 y = decimal.ToInt32(tmpdec);

@@ -484,7 +484,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
 
         private static bool IsRightToLeft(string text)
         {
-            HarfBuzzSharp.Buffer buffer = new();
+            using HarfBuzzSharp.Buffer buffer = new();
             buffer.AddUtf16(text);
             buffer.GuessSegmentProperties();
             return buffer.Direction == HarfBuzzSharp.Direction.RightToLeft;

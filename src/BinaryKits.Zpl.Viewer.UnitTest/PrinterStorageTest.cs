@@ -88,6 +88,7 @@ namespace BinaryKits.Zpl.Viewer.UnitTest
             Assert.IsTrue(IsDisposed(owned));
             Assert.IsFalse(IsDisposed(shared));
             Assert.ThrowsExactly<ObjectDisposedException>(() => storage.AddFont('E', "X.TTF", CreateFont()));
+            Assert.ThrowsExactly<ObjectDisposedException>(() => storage.AddFile('E', "X.GRF", [1]));
         }
 
         [TestMethod]

@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 
 using static System.Net.Mime.MediaTypeNames;
 
@@ -49,7 +50,7 @@ namespace BinaryKits.Zpl.Label.Elements
 
         protected string RenderModuleWidth()
         {
-            return $"^BY{ModuleWidth},{WideBarToNarrowBarWidthRatio}";
+            return string.Create(CultureInfo.InvariantCulture, $"^BY{ModuleWidth},{WideBarToNarrowBarWidthRatio}");
         }
 
     }

@@ -1,5 +1,7 @@
 ﻿using BinaryKits.Zpl.Label.Elements;
 
+using System.Globalization;
+
 namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
 {
     public class BarCodeFieldDefaultZplCommandAnalyzer : ZplCommandAnalyzerBase
@@ -29,7 +31,7 @@ namespace BinaryKits.Zpl.Viewer.CommandAnalyzers
                 virtualPrinter.SetBarcodeModuleWidth(tmpint);
             }
 
-            if (zplDataParts.Length > 1 && double.TryParse(zplDataParts[1], out tmpdbl))
+            if (zplDataParts.Length > 1 && double.TryParse(zplDataParts[1], NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out tmpdbl))
             {
                 // TODO: add validation message: between 2.0 and 3.0 in 0.1 increments
                 if (tmpdbl < 2.0)

@@ -43,16 +43,33 @@ namespace BinaryKits.Zpl.Viewer.DownloadedFonts
                 {
                     ObjectDisposedException.ThrowIf(this.disposed, this);
 
-                    if (!this.typefaceLoaded)
-                    {
-                        using SKData skData = SKData.CreateCopy(this.Data);
-                        this.typeface = SKTypeface.FromData(skData);
-                        this.typefaceLoaded = true;
-                    }
-
-                    return this.typeface;
+                    return this.LoadTypeface();
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets <see cref="Typeface"/>; <c>false</c> when this font is disposed or Skia cannot load the data.
+        /// </summary>
+        public bool TryGetTypeface(out SKTypeface typeface)
+        {
+            lock (this.sync)
+            {
+                typeface = this.disposed ? null : this.LoadTypeface();
+                return typeface != null;
+            }
+        }
+
+        private SKTypeface LoadTypeface()
+        {
+            if (!this.typefaceLoaded)
+            {
+                using SKData skData = SKData.CreateCopy(this.Data);
+                this.typeface = SKTypeface.FromData(skData);
+                this.typefaceLoaded = true;
+            }
+
+            return this.typeface;
         }
 
         /// <summary>

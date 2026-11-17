@@ -41,7 +41,7 @@ namespace BinaryKits.Zpl.Viewer.DownloadedFonts
                 return false;
             }
 
-            if (font is ZplDownloadedOutlineFont outlineFont && outlineFont.Typeface == null)
+            if (font is ZplDownloadedOutlineFont outlineFont && !outlineFont.TryGetTypeface(out _))
             {
                 return false;
             }

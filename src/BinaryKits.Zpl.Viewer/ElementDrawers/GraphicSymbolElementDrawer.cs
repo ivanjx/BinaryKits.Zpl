@@ -21,6 +21,17 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
         }
 
         ///<inheritdoc/>
+        public override bool IsReverseDraw(ZplElementBase element)
+        {
+            if (element is ZplGraphicSymbol graphicSymbol)
+            {
+                return graphicSymbol.ReversePrint;
+            }
+
+            return false;
+        }
+
+        ///<inheritdoc/>
         public override SKPoint Draw(ZplElementBase element, DrawerOptions options, SKPoint currentPosition, InternationalFont internationalFont, int printDensityDpmm)
         {
             if (element is ZplGraphicSymbol graphicSymbol)
@@ -58,7 +69,8 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                 using SKFont skFont = FontScale.CreateCapHeightFont(typeface, cellHeight, scaleX);
                 using SKPaint skPaint = new()
                 {
-                    IsAntialias = options.Antialias
+                    IsAntialias = options.Antialias,
+                    BlendMode = graphicSymbol.ReversePrint ? SKBlendMode.Xor : SKBlendMode.SrcOver
                 };
 
                 float totalWidth = skFont.MeasureText(displayText, out SKRect textBounds);
@@ -222,7 +234,7 @@ namespace BinaryKits.Zpl.Viewer.ElementDrawers
                     x - totalWidth :
                     x;
 
-                using SKPaint paint = ZplBitmapFontRenderer.CreatePaint(false);
+                using SKPaint paint = ZplBitmapFontRenderer.CreatePaint(graphicSymbol.ReversePrint);
                 ZplBitmapFontRenderer renderer = new(this.skCanvas);
                 renderer.DrawText(displayText, fontData, metrics, drawX, topY, paint);
 

@@ -10,6 +10,8 @@ namespace BinaryKits.Zpl.Label.Elements
 
         public GraphicSymbolCharacter? Character { get; private set; }
 
+        public bool ReversePrint { get; private set; }
+
         public ZplGraphicSymbol(
             string text,
             int positionX,
@@ -19,7 +21,8 @@ namespace BinaryKits.Zpl.Label.Elements
             FieldOrientation fieldOrientation = FieldOrientation.Normal,
             bool bottomToTop = false,
             bool useDefaultPosition = false,
-            FieldJustification fieldJustification = FieldJustification.None)
+            FieldJustification fieldJustification = FieldJustification.None,
+            bool reversePrint = false)
             : base(positionX, positionY, bottomToTop, useDefaultPosition, fieldJustification)
         {
             GraphicSymbolCharacter? character = default;
@@ -32,6 +35,7 @@ namespace BinaryKits.Zpl.Label.Elements
             FieldOrientation = fieldOrientation;
             Width = width;
             Height = height;
+            ReversePrint = reversePrint;
         }
 
         public ZplGraphicSymbol(
@@ -42,13 +46,15 @@ namespace BinaryKits.Zpl.Label.Elements
             int height,
             FieldOrientation fieldOrientation = FieldOrientation.Normal,
             bool bottomToTop = false,
-            bool useDefaultPosition = false)
+            bool useDefaultPosition = false,
+            bool reversePrint = false)
             : base(positionX, positionY, bottomToTop, useDefaultPosition)
         {
             Character = character;
             FieldOrientation = fieldOrientation;
             Width = width;
             Height = height;
+            ReversePrint = reversePrint;
         }
 
         ///<inheritdoc/>
@@ -57,7 +63,7 @@ namespace BinaryKits.Zpl.Label.Elements
             //^GSo,h,w
             var result = new List<string>();
             result.AddRange(RenderPosition(context));
-            result.Add($"^GS{RenderFieldOrientation(FieldOrientation)},{context.Scale(Height)},{context.Scale(Width)}^FD{(char?)Character}^FS");
+            result.Add($"{(ReversePrint ? "^FR" : string.Empty)}^GS{RenderFieldOrientation(FieldOrientation)},{context.Scale(Height)},{context.Scale(Width)}^FD{(char?)Character}^FS");
 
             return result;
         }
